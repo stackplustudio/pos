@@ -44,153 +44,159 @@ const benefits = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen overflow-hidden bg-brand-background text-gray-900">
-      <header className="px-4 pt-5 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-brand-background text-brand-ink font-sans selection:bg-brand-primary-soft selection:text-brand-primary-dark">
+      {/* Header & Nav */}
+      <header className="border-b border-brand-line bg-brand-surface/90 sticky top-0 z-nav backdrop-blur-xs">
         <nav
           aria-label="Navigasi utama"
-          className="mx-auto flex max-w-7xl items-center justify-between"
+          className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8"
         >
-          <Link href="/" className="flex min-h-11 items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-brand-primary text-white">
-              <Store size={21} strokeWidth={2.2} />
+          <Link href="/" className="flex items-center gap-2.5 text-brand-ink-dark transition-colors hover:text-brand-primary">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-brand-primary text-white shadow-xs">
+              <Store size={20} strokeWidth={2.2} aria-hidden="true" />
             </span>
-            <span className="text-lg font-bold tracking-tight">
+            <span className="text-lg font-bold tracking-tight text-brand-ink-dark">
               NusaKasir<span className="text-brand-primary">.</span>
             </span>
           </Link>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-4">
             <a
               href="#fitur"
-              className="hidden min-h-11 items-center px-3 text-sm font-medium text-gray-500 transition-colors hover:text-brand-primary sm:inline-flex"
+              className="hidden text-sm font-medium text-brand-ink-muted transition-colors hover:text-brand-primary sm:inline-flex"
             >
               Fitur
             </a>
             <a
               href="#unduh"
-              className="hidden min-h-11 items-center px-3 text-sm font-medium text-gray-500 transition-colors hover:text-brand-primary sm:inline-flex"
+              className="hidden text-sm font-medium text-brand-ink-muted transition-colors hover:text-brand-primary sm:inline-flex"
             >
               Platform
             </a>
             <Link
               href="/auth/login"
-              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-ink-dark px-5 text-xs font-bold uppercase text-white transition-colors hover:bg-black"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-primary px-4 text-xs font-semibold text-white shadow-xs transition-colors duration-150 hover:bg-brand-primary-dark focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              Coba aplikasi <ArrowRight size={15} />
+              <span>Buka aplikasi</span>
+              <ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
         </nav>
       </header>
 
-      <section className="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-16 pt-16 sm:px-6 sm:pt-20 lg:grid-cols-2 lg:gap-10 lg:px-8 lg:pb-24 lg:pt-20">
+      {/* Hero Section */}
+      <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-12 lg:px-8">
         <div className="max-w-xl">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-line bg-white px-3 py-2 text-xs font-medium text-gray-500">
-            <span className="size-2 rounded-full bg-brand-primary" />
-            Satu sistem untuk operasional F&amp;B
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-line bg-brand-surface px-3 py-1.5 text-xs font-medium text-brand-ink-muted">
+            <span className="size-2 rounded-full bg-brand-primary" aria-hidden="true" />
+            Satu sistem untuk operasional kasir &amp; stok UMKM F&amp;B
           </div>
-          <h1 className="mb-6 text-5xl font-bold leading-[1.08] tracking-tight text-gray-900 sm:text-6xl lg:text-7xl">
-            Bisnis jalan,
-            <br />
+          <h1 className="mb-4 text-4xl font-bold tracking-tight text-brand-ink-dark sm:text-5xl lg:text-6xl leading-[1.1]">
+            Bisnis jalan,{" "}
             <span className="text-brand-primary">semua tercatat.</span>
           </h1>
-          <p className="mb-8 max-w-lg text-base leading-relaxed text-gray-500 sm:text-lg">
-            Kelola kasir, stok, dan penjualan NusaKasir dengan lebih rapi.
-            Dirancang untuk membantu bisnis kuliner tumbuh, dari satu outlet
-            hingga banyak cabang.
+          <p className="mb-6 text-base leading-relaxed text-brand-ink-muted sm:text-lg">
+            Kelola kasir, stok resep, dan laporan omzet harian dengan lebih teratur.
+            Dirancang khusus untuk membantu bisnis kuliner berkembang secara sehat.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link
               href="/auth/login"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-brand-primary px-6 text-xs font-bold uppercase text-white shadow-lg shadow-brand-primary/20 transition-all hover:bg-brand-primary-dark"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-6 text-sm font-semibold text-white shadow-xs transition-colors duration-150 hover:bg-brand-primary-dark focus-visible:ring-2 focus-visible:ring-brand-primary active:scale-95"
             >
-              Masuk dan coba sekarang <ArrowRight size={16} />
+              <span>Masuk ke dashboard</span>
+              <ArrowRight size={16} aria-hidden="true" />
             </Link>
             <a
               href="#fitur"
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-brand-line bg-white px-6 text-xs font-bold uppercase text-gray-700 transition-colors hover:border-brand-primary/40 hover:text-brand-primary"
+              className="inline-flex h-11 items-center justify-center rounded-lg border border-brand-line bg-brand-surface px-5 text-sm font-semibold text-brand-ink-dark transition-colors duration-150 hover:bg-brand-surface-alt focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              Lihat fitur
+              Pelajari fitur
             </a>
           </div>
-          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium text-gray-500">
-            <span className="inline-flex items-center gap-2">
-              <Check size={15} className="text-brand-primary" />
-              Kasir &amp; pembayaran
+          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-medium text-brand-ink-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <Check size={15} className="text-brand-primary" aria-hidden="true" />
+              Kasir sentuh cepat &amp; cetak struk
             </span>
-            <span className="inline-flex items-center gap-2">
-              <Check size={15} className="text-brand-primary" />
-              Inventori terpantau
+            <span className="inline-flex items-center gap-1.5">
+              <Check size={15} className="text-brand-primary" aria-hidden="true" />
+              Otomatisasi resep BOM &amp; inventori
             </span>
           </div>
         </div>
 
+        {/* Hero Visual Card */}
         <div
-          role="group"
-          aria-label="Pratinjau dashboard NusaKasir"
-          className="relative mx-auto w-full max-w-[560px]"
+          role="region"
+          aria-label="Pratinjau antarmuka NusaKasir"
+          className="relative mx-auto w-full max-w-[500px]"
         >
-          <div className="absolute -right-8 -top-8 size-48 rounded-full bg-brand-surface-alt blur-3xl" />
-          <div className="absolute -bottom-8 -left-8 size-48 rounded-full bg-brand-primary/10 blur-3xl" />
-          <div className="relative overflow-hidden rounded-3xl border border-brand-line bg-white p-3 shadow-xl shadow-gray-200/50 sm:p-5">
+          <div className="overflow-hidden rounded-2xl border border-brand-line bg-brand-surface p-5 shadow-sm sm:p-6">
             <div className="flex items-center justify-between border-b border-brand-line pb-4">
               <div className="flex items-center gap-3">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary">
-                  <Store size={20} />
+                <span className="flex size-9 items-center justify-center rounded-lg bg-brand-primary-soft text-brand-primary">
+                  <Store size={18} aria-hidden="true" />
                 </span>
                 <div>
-                  <p className="text-sm font-bold text-gray-900">Ringkasan outlet</p>
-                  <p className="text-xs text-gray-500">Kedai Senja · Hari ini</p>
+                  <p className="text-sm font-bold text-brand-ink-dark">Ringkasan Outlet Hari Ini</p>
+                  <p className="text-xs text-brand-ink-muted">Kedai Kopi &amp; Resto Senja</p>
                 </div>
               </div>
-              <span className="rounded-full bg-brand-surface-alt px-3 py-1.5 text-[11px] font-semibold text-gray-500">
-                Live
+              <span className="rounded-full bg-success-soft px-2.5 py-1 text-[11px] font-semibold text-success">
+                Aktif
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 py-5">
-              <div className="rounded-2xl bg-brand-surface-alt p-4">
-                <div className="mb-4 flex items-center justify-between text-gray-500">
-                  <span className="text-xs">Penjualan</span>
-                  <CircleDollarSign size={17} />
+            <div className="grid grid-cols-2 gap-3 py-4">
+              <div className="rounded-xl border border-brand-line bg-brand-background p-4">
+                <div className="mb-2 flex items-center justify-between text-brand-ink-muted">
+                  <span className="text-xs font-medium">Penjualan</span>
+                  <CircleDollarSign size={16} aria-hidden="true" />
                 </div>
-                <p className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+                <p className="text-xl font-bold tracking-tight text-brand-ink-dark sm:text-2xl tabular-nums">
                   Rp 2.845.000
                 </p>
-                <p className="mt-1 text-[11px] font-medium text-brand-primary">
+                <p className="mt-1 text-[11px] font-medium text-success">
                   +12,8% dari kemarin
                 </p>
               </div>
-              <div className="rounded-2xl border border-brand-line p-4">
-                <div className="mb-4 flex items-center justify-between text-gray-500">
-                  <span className="text-xs">Pesanan</span>
-                  <Clock3 size={17} />
+
+              <div className="rounded-xl border border-brand-line bg-brand-background p-4">
+                <div className="mb-2 flex items-center justify-between text-brand-ink-muted">
+                  <span className="text-xs font-medium">Pesanan Selesai</span>
+                  <Clock3 size={16} aria-hidden="true" />
                 </div>
-                <p className="text-2xl font-bold tracking-tight text-gray-900">84</p>
-                <p className="mt-1 text-[11px] text-gray-500">Transaksi hari ini</p>
+                <p className="text-xl font-bold tracking-tight text-brand-ink-dark sm:text-2xl tabular-nums">
+                  84
+                </p>
+                <p className="mt-1 text-[11px] text-brand-ink-muted">Transaksi kasir</p>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-brand-line p-4">
-              <div className="mb-4 flex items-center justify-between">
+            {/* Mini Chart Component */}
+            <div className="rounded-xl border border-brand-line bg-brand-background p-4">
+              <div className="mb-3 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">Aktivitas penjualan</p>
-                  <p className="mt-1 text-xs text-gray-500">Ringkasan per jam</p>
+                  <p className="text-xs font-semibold text-brand-ink-dark">Aktivitas Jam Sibuk</p>
+                  <p className="text-[11px] text-brand-ink-muted">Distribusi transaksi per jam</p>
                 </div>
-                <span className="text-xs font-semibold text-brand-primary">Hari ini</span>
+                <span className="text-xs font-semibold text-brand-primary">Real-time</span>
               </div>
-              <div className="flex h-24 items-end gap-2 sm:h-28 sm:gap-3">
+              <div className="flex h-20 items-end gap-1.5 sm:gap-2">
                 {[38, 57, 44, 75, 58, 90, 68, 100, 79, 63, 86, 72].map(
                   (height, index) => (
                     <span
                       key={index}
-                      className={`flex-1 rounded-t-md ${
-                        index === 7 ? "bg-brand-primary" : "bg-brand-primary/15"
+                      className={`flex-1 rounded-t-sm transition-colors ${
+                        index === 7 ? "bg-brand-primary" : "bg-brand-primary-soft"
                       }`}
                       style={{ height: `${height}%` }}
                     />
-                  ),
+                  )
                 )}
               </div>
-              <div className="mt-2 flex justify-between text-[10px] text-gray-400">
+              <div className="mt-2 flex justify-between text-[10px] text-brand-ink-muted tabular-nums">
                 <span>08.00</span>
                 <span>12.00</span>
                 <span>16.00</span>
@@ -198,74 +204,61 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-between rounded-2xl bg-brand-primary p-4 text-white">
+            {/* Alert Bahan Menipis */}
+            <div className="mt-3 flex items-center justify-between rounded-xl border border-brand-line bg-brand-surface-alt p-3.5 text-brand-ink-dark">
               <div className="flex items-center gap-3">
-                <span className="flex size-9 items-center justify-center rounded-xl bg-white/15">
-                  <Truck size={18} />
+                <span className="flex size-8 items-center justify-center rounded-lg bg-warning-soft text-warning">
+                  <Truck size={16} aria-hidden="true" />
                 </span>
                 <div>
-                  <p className="text-xs font-semibold">Stok perlu diperhatikan</p>
-                  <p className="mt-0.5 text-[11px] text-white/75">2 bahan baku menipis</p>
+                  <p className="text-xs font-semibold text-brand-ink-dark">Peringatan Bahan Baku</p>
+                  <p className="text-[11px] text-brand-ink-muted">2 item mendekati batas minimum restock</p>
                 </div>
               </div>
-              <ArrowRight size={17} />
-            </div>
-          </div>
-          <div className="absolute -bottom-5 right-5 hidden items-center gap-3 rounded-2xl border border-brand-line bg-white p-3 shadow-lg shadow-gray-200/50 sm:flex">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-brand-surface-alt text-brand-primary">
-              <Check size={18} />
-            </span>
-            <div>
-              <p className="text-xs font-bold text-gray-900">Operasional lebih tertata</p>
-              <p className="text-[11px] text-gray-500">Dalam satu dashboard</p>
+              <span className="text-xs font-semibold text-brand-primary">Lihat</span>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="fitur" className="border-y border-brand-line bg-brand-surface py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-10 flex flex-col gap-4 md:mb-12 md:flex-row md:items-end md:justify-between">
+      {/* Feature Section */}
+      <section id="fitur" className="border-y border-brand-line bg-brand-surface py-14 sm:py-18">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Dibuat untuk bisnis kuliner
-              </p>
-              <h2 className="max-w-xl text-3xl font-bold leading-tight tracking-tight text-gray-900 sm:text-4xl">
-                Fokus melayani,
-                <br />
+              <h2 className="text-2xl font-bold tracking-tight text-brand-ink-dark sm:text-3xl">
+                Fokus melayani pelanggan,{" "}
                 <span className="text-brand-primary">biar sistem yang mencatat.</span>
               </h2>
             </div>
-            <p className="max-w-sm text-sm leading-relaxed text-gray-500">
-              Semua alat penting untuk transaksi harian tersedia dalam alur
-              kerja yang sederhana dan mudah dipelajari tim.
+            <p className="max-w-md text-sm leading-relaxed text-brand-ink-muted">
+              Semua alur kerja kasir, pengelolaan resep, dan laporan omzet terhubung otomatis dalam satu aplikasi.
             </p>
           </div>
+
           <div className="grid gap-4 md:grid-cols-3">
             {benefits.map(({ icon: Icon, title, description }, index) => (
               <article
                 key={title}
-                className={`rounded-2xl border p-6 sm:p-7 ${
+                className={`rounded-xl border p-5 sm:p-6 shadow-xs ${
                   index === 0
                     ? "border-brand-primary bg-brand-primary text-white"
-                    : "border-brand-line bg-white"
+                    : "border-brand-line bg-brand-surface text-brand-ink"
                 }`}
               >
                 <span
-                  className={`mb-7 flex size-11 items-center justify-center rounded-xl ${
+                  className={`mb-5 flex size-10 items-center justify-center rounded-lg ${
                     index === 0
-                      ? "bg-white/15 text-white"
-                      : "bg-brand-primary/10 text-brand-primary"
+                      ? "bg-white/20 text-white"
+                      : "bg-brand-primary-soft text-brand-primary"
                   }`}
                 >
-                  <Icon size={22} />
+                  <Icon size={20} aria-hidden="true" />
                 </span>
-                <h3 className="mb-2 text-lg font-semibold">{title}</h3>
-                <p
-                  className={`text-sm leading-relaxed ${
-                    index === 0 ? "text-white/80" : "text-gray-500"
-                  }`}
-                >
+                <h3 className={`mb-2 text-base font-semibold ${index === 0 ? "text-white" : "text-brand-ink-dark"}`}>
+                  {title}
+                </h3>
+                <p className={`text-xs leading-relaxed ${index === 0 ? "text-white/85" : "text-brand-ink-muted"}`}>
                   {description}
                 </p>
               </article>
@@ -274,74 +267,73 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="unduh" className="py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-9 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      {/* Platform & CTA Section */}
+      <section id="unduh" className="py-14 sm:py-18">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Akses dari perangkat pilihanmu
-              </p>
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                Satu akun, <span className="text-brand-primary">di mana saja.</span>
+              <h2 className="text-2xl font-bold tracking-tight text-brand-ink-dark sm:text-3xl">
+                Akses mudah di mana saja,{" "}
+                <span className="text-brand-primary">kapan saja.</span>
               </h2>
             </div>
-            <p className="max-w-sm text-sm leading-relaxed text-gray-500">
-              Gunakan NusaKasir melalui web hari ini. Aplikasi desktop dan
-              mobile sedang disiapkan.
+            <p className="max-w-md text-sm leading-relaxed text-brand-ink-muted">
+              Gunakan NusaKasir melalui browser desktop, tablet kasir, atau laptop tanpa instalasi rumit.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {platforms.map(({ name, detail, icon: Icon }) => (
               <div
                 key={name}
-                className="flex items-center justify-between rounded-2xl border border-brand-line bg-white p-5"
+                className="flex items-center justify-between rounded-xl border border-brand-line bg-brand-surface p-4 shadow-xs"
               >
-                <div className="flex items-center gap-4">
-                  <span className="flex size-11 items-center justify-center rounded-xl bg-brand-surface-alt text-brand-primary">
-                    <Icon size={21} />
+                <div className="flex items-center gap-3">
+                  <span className="flex size-9 items-center justify-center rounded-lg bg-brand-surface-alt text-brand-primary">
+                    <Icon size={18} aria-hidden="true" />
                   </span>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{name}</p>
-                    <p className="mt-1 text-xs text-gray-500">{detail}</p>
+                    <p className="text-xs font-semibold text-brand-ink-dark">{name}</p>
+                    <p className="text-[11px] text-brand-ink-muted">{detail}</p>
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-surface-alt px-3 py-2 text-[10px] font-semibold text-gray-500">
-                  <ArrowDownToLine size={13} />
-                  Segera hadir
+                <span className="inline-flex items-center gap-1 rounded-full bg-brand-surface-alt px-2.5 py-1 text-[10px] font-semibold text-brand-ink-muted">
+                  <ArrowDownToLine size={12} aria-hidden="true" />
+                  Siap
                 </span>
               </div>
             ))}
           </div>
-          <div className="mt-8 flex flex-col items-center justify-between gap-5 rounded-3xl bg-brand-primary px-6 py-8 text-white sm:flex-row sm:px-10">
+
+          {/* Banner Card */}
+          <div className="mt-8 flex flex-col items-center justify-between gap-6 rounded-2xl border border-brand-line bg-brand-surface-alt p-6 sm:flex-row sm:p-8">
             <div className="max-w-xl">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/70">
-                Mulai sekarang
-              </p>
-              <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Coba NusaKasir lewat web.
+              <h3 className="text-xl font-bold tracking-tight text-brand-ink-dark sm:text-2xl">
+                Mulai kelola outlet kuliner Anda hari ini.
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-white/80">
-                Masuk ke aplikasi dan lihat bagaimana alur operasional bisnis
-                Anda bisa lebih ringkas.
+              <p className="mt-1.5 text-xs text-brand-ink-muted leading-relaxed">
+                Akses dashboard dan buka layar kasir dengan akun demo ataupun akun operasional bisnis Anda.
               </p>
             </div>
             <Link
               href="/auth/login"
-              className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-6 text-xs font-bold uppercase text-brand-primary transition-colors hover:bg-brand-surface-alt"
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-primary px-6 text-sm font-semibold text-white shadow-xs transition-colors duration-150 hover:bg-brand-primary-dark focus-visible:ring-2 focus-visible:ring-brand-primary active:scale-95"
             >
-              Coba aplikasi <ArrowRight size={16} />
+              <span>Masuk sekarang</span>
+              <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-brand-line bg-brand-surface py-7">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <Link href="/" className="font-bold text-gray-900">
+      {/* Footer */}
+      <footer className="border-t border-brand-line bg-brand-surface py-6">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 text-xs text-brand-ink-muted sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <Link href="/" className="font-bold text-brand-ink-dark">
             NusaKasir<span className="text-brand-primary">.</span>
           </Link>
-          <p>Solusi kasir dan inventori untuk bisnis kuliner Indonesia.</p>
-          <p>© {new Date().getFullYear()} NusaKasir</p>
+          <p>Sistem POS dan manajemen stok bahan baku untuk UMKM F&amp;B Indonesia.</p>
+          <p>© {new Date().getFullYear()} StackPlus Studio</p>
         </div>
       </footer>
     </main>

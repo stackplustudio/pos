@@ -1,0 +1,76 @@
+:root {
+  /* StackPlus Studio UI System V3 Brand Tokens */
+  --brand-primary: #0053F1;
+  --brand-primary-dark: #003CB3;
+  --brand-background: #FCFBF6;
+  --brand-surface: #FDFBF7;
+  --brand-surface-alt: #F6F3EC;
+  --brand-line: #EAE5D9;
+  --brand-ink: #423E3A;
+  --brand-ink-dark: #2A2724;
+
+  /* V3 Semantic & Extended Tokens */
+  --brand-primary-soft: #EEF3FE;
+  --brand-ink-muted: #6B665F;
+  --brand-line-strong: #8F897E;
+  --overlay: rgb(42 39 36 / 0.5);
+
+  --success: #15803D;
+  --success-soft: #F0FDF4;
+  --warning: #B45309;
+  --warning-soft: #FFFBEB;
+  --danger: #DC2626;
+  --danger-dark: #B91C1C;
+  --danger-soft: #FEF2F2;
+  --info: #0369A1;
+  --info-soft: #F0F9FF;
+
+  /* Sizing Controls */
+  --control-height-sm: 36px;
+  --control-height-md: 40px;
+  --control-height-lg: 44px;
+
+  /* Z-index */
+  --z-base: 1;
+  --z-sticky: 10;
+  --z-dropdown: 20;
+  --z-nav: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-popover: 60;
+  --z-toast: 70;
+  --z-critical: 80;
+
+  /* Motion */
+  --duration-fast: 100ms;
+  --duration-base: 150ms;
+  --duration-slow: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Hallmark Bridge Tokens */
+  --color-paper: var(--brand-background);
+  --color-paper-2: var(--brand-surface);
+  --color-paper-3: var(--brand-surface-alt);
+  --color-ink: var(--brand-ink);
+  --color-ink-2: var(--brand-ink-dark);
+  --color-muted: var(--brand-ink-muted);
+  --color-rule: var(--brand-line);
+  --color-accent: var(--brand-primary);
+  --color-accent-ink: #FFFFFF;
+  --color-focus: var(--brand-primary);
+  --color-error: var(--danger);
+  --color-success: var(--success);
+
+  --font-display: var(--font-sans), Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: var(--font-sans), Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-outlier: var(--font-body);
+
+  --radius-card: 16px;
+  --radius-pill: 9999px;
+  --rule-hair: 1px;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.05);
+
+  --container: 1280px;
+  --gutter: 24px;
+}
+

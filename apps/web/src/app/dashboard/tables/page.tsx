@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, LayoutGrid } from "lucide-react";
+import { Plus, Trash2, LayoutGrid } from "lucide-react";
 import { api } from "@/lib/axios";
 import { toast } from "react-hot-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Table {
   id: string;
@@ -16,7 +18,7 @@ export default function TablesPage() {
   const [tables, setTables] = useState<Table[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // State untuk form sederhana (Bisa diubah jadi Modal/Dialog jika butuh divalidasi ketat)
+  // Form State
   const [nomorMeja, setNomorMeja] = useState("");
   const [area, setArea] = useState("");
 
@@ -26,9 +28,9 @@ export default function TablesPage() {
 
   const fetchTables = async () => {
     try {
-      const response = await api.get('/tables');
+      const response = await api.get("/tables");
       setTables(response.data);
-    } catch (error) {
+    } catch {
       toast.error("Gagal mengambil data meja");
     } finally {
       setIsLoading(false);
@@ -40,12 +42,12 @@ export default function TablesPage() {
     if (!nomorMeja) return;
 
     try {
-      await api.post('/tables', { nomor_meja: nomorMeja, area });
+      await api.post("/tables", { nomor_meja: nomorMeja, area });
       toast.success("Meja berhasil ditambahkan");
       setNomorMeja("");
       setArea("");
       fetchTables();
-    } catch (error) {
+    } catch {
       toast.error("Gagal menambahkan meja");
     }
   };
@@ -53,49 +55,76 @@ export default function TablesPage() {
   const handleDelete = async (id: string) => {
     try {
       await api.delete(`/tables/${id}`);
-      toast.success("Meja dihapus");
+      toast.success("Meja berhasil dihapus");
       fetchTables();
-    } catch (error) {
+    } catch {
       toast.error("Gagal menghapus meja");
     }
   };
 
   return (
-    <div className="max-w-[1280px] mx-auto font-inter text-[#00232C]">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-[40px] font-bold leading-tight">Manajemen Meja</h1>
-          <p className="text-[#00232C]/70 mt-1">Atur tata letak meja untuk pesanan Dine-in.</p>
-        </div>
+    <div className="mx-auto max-w-6xl font-sans text-brand-ink">
+      {/* Header Halaman */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-brand-ink-dark sm:text-3xl">
+          Manajemen Meja
+        </h1>
+        <p className="mt-1 text-sm text-brand-ink-muted">
+          Atur nomor dan area tata letak meja untuk pesanan makan di tempat (Dine-in).
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Kolom Kiri: Form Tambah */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Kolom Kiri: Form Tambah Meja */}
         <div className="lg:col-span-1">
-          <div className="bg-white/60 backdrop-blur-[20px] border border-white/55 shadow-[0_10px_30px_rgba(0,35,44,0.08)] rounded-[20px] p-6 sticky top-6">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Plus size={20}/> Tambah Meja</h3>
+          <div className="rounded-xl border border-brand-line bg-brand-surface p-5 shadow-xs sticky top-20">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-brand-ink-dark">
+              <Plus size={16} className="text-brand-primary" aria-hidden="true" />
+              <span>Tambah Meja Baru</span>
+            </h2>
+
             <form onSubmit={handleAddTable} className="space-y-4">
               <div>
-                <label className="block text-[14px] font-semibold mb-2">Nomor Meja</label>
-                <input 
-                  type="text" required value={nomorMeja} onChange={(e) => setNomorMeja(e.target.value)}
+                <label
+                  htmlFor="nomorMeja"
+                  className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+                >
+                  Nomor Meja
+                </label>
+                <Input
+                  id="nomorMeja"
+                  type="text"
+                  required
+                  value={nomorMeja}
+                  onChange={(e) => setNomorMeja(e.target.value)}
                   placeholder="Contoh: A1, Teras-2"
-                  className="w-full h-12 bg-[#FBFBF3] border border-[#00232C]/10 focus:border-[#0053FF] focus:ring-1 focus:ring-[#0053FF] rounded-[12px] px-4 outline-none transition-all"
+                  className="h-10 text-xs"
                 />
               </div>
+
               <div>
-                <label className="block text-[14px] font-semibold mb-2">Area (Opsional)</label>
-                <input 
-                  type="text" value={area} onChange={(e) => setArea(e.target.value)}
-                  placeholder="Contoh: Indoor, Smoking Area"
-                  className="w-full h-12 bg-[#FBFBF3] border border-[#00232C]/10 focus:border-[#0053FF] focus:ring-1 focus:ring-[#0053FF] rounded-[12px] px-4 outline-none transition-all"
+                <label
+                  htmlFor="areaMeja"
+                  className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+                >
+                  Area (Opsional)
+                </label>
+                <Input
+                  id="areaMeja"
+                  type="text"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  placeholder="Contoh: Indoor, Outdoor"
+                  className="h-10 text-xs"
                 />
               </div>
-              <button type="submit" className="w-full h-12 bg-[#0053FF] text-white rounded-full font-medium shadow-[0_4px_12px_rgba(0,83,255,0.25)] hover:-translate-y-[1px] transition-all">
+
+              <Button
+                type="submit"
+                className="w-full text-xs font-semibold"
+              >
                 Simpan Meja
-              </button>
+              </Button>
             </form>
           </div>
         </div>
@@ -103,26 +132,52 @@ export default function TablesPage() {
         {/* Kolom Kanan: Grid Meja */}
         <div className="lg:col-span-2">
           {isLoading ? (
-            <div className="flex justify-center py-20"><p className="text-[#00232C]/50">Memuat meja...</p></div>
+            <div className="flex h-48 items-center justify-center text-xs text-brand-ink-muted">
+              Memuat data meja…
+            </div>
           ) : tables.length === 0 ? (
-            <div className="bg-white/60 backdrop-blur-[20px] border border-white/55 rounded-[20px] p-10 flex flex-col items-center text-center">
-              <div className="bg-[#00232C]/5 p-4 rounded-full mb-4"><LayoutGrid className="text-[#00232C]/40" size={32} /></div>
-              <h3 className="text-xl font-bold mb-2">Belum ada meja</h3>
-              <p className="text-[#00232C]/60">Tambahkan meja di form sebelah kiri untuk memulai.</p>
+            <div className="flex h-56 flex-col items-center justify-center rounded-xl border border-dashed border-brand-line bg-brand-surface p-6 text-center text-xs text-brand-ink-muted">
+              <LayoutGrid size={32} className="mb-2 text-brand-line-strong" aria-hidden="true" />
+              <p className="font-semibold text-brand-ink-dark">Belum ada meja terdaftar</p>
+              <p className="mt-1 text-brand-ink-muted">Gunakan form di samping untuk mendaftarkan meja operasional.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-              {tables.map(table => (
-                <div key={table.id} className="bg-white/72 backdrop-blur-[24px] border border-white/65 shadow-[0_10px_30px_rgba(0,35,44,0.08)] rounded-[20px] p-5 flex flex-col items-center justify-center relative group">
-                  <span className={`absolute top-3 left-3 w-3 h-3 rounded-full ${table.status === 'KOSONG' ? 'bg-[#16A34A]' : 'bg-[#DC2626]'}`}></span>
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleDelete(table.id)} className="p-1 text-red-500 hover:bg-red-50 rounded-full"><Trash2 size={16}/></button>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+              {tables.map((table) => {
+                const isVacant = table.status === "KOSONG";
+                return (
+                  <div
+                    key={table.id}
+                    className="group relative flex flex-col items-center justify-center rounded-xl border border-brand-line bg-brand-surface p-5 shadow-xs transition-colors duration-150 hover:border-brand-primary"
+                  >
+                    <span
+                      className={`absolute top-3 left-3 size-2 rounded-full ${
+                        isVacant ? "bg-success" : "bg-danger"
+                      }`}
+                      title={isVacant ? "Meja Kosong" : "Meja Terisi"}
+                      aria-hidden="true"
+                    />
+
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(table.id)}
+                        className="inline-flex size-6 items-center justify-center rounded text-danger hover:bg-danger-soft transition-colors"
+                        aria-label={`Hapus meja ${table.nomor_meja}`}
+                      >
+                        <Trash2 size={13} aria-hidden="true" />
+                      </button>
+                    </div>
+
+                    <p className="mt-1 text-2xl font-bold tracking-tight text-brand-ink-dark">
+                      {table.nomor_meja}
+                    </p>
+                    <p className="mt-1 rounded-md bg-brand-surface-alt px-2 py-0.5 text-[10px] font-medium text-brand-ink-muted">
+                      {table.area || "Umum"}
+                    </p>
                   </div>
-                  
-                  <h4 className="text-3xl font-black text-[#00232C] mt-2">{table.nomor_meja}</h4>
-                  <p className="text-[12px] font-semibold text-[#00232C]/50 uppercase tracking-wide mt-1">{table.area || 'Tanpa Area'}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

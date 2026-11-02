@@ -9,6 +9,7 @@ import {
   EyeOff,
   ShieldAlert,
   Store,
+  CheckCircle2,
 } from "lucide-react";
 import { api } from "@/lib/axios";
 import { toast } from "react-hot-toast";
@@ -72,82 +73,72 @@ function LoginContent() {
   };
 
   return (
-    <div className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_460px] lg:gap-16 lg:px-8 lg:py-12">
-      <section className="mx-auto w-full max-w-xl">
-        <Link href="/" className="mb-9 inline-flex min-h-11 items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-brand-primary text-white">
-            <Store size={21} strokeWidth={2.2} />
+    <div className="mx-auto grid min-h-screen w-full max-w-5xl items-center gap-10 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_420px] lg:gap-14 lg:px-8 font-sans">
+      <section className="mx-auto w-full max-w-lg">
+        <Link href="/" className="mb-8 inline-flex h-10 items-center gap-2.5 text-brand-ink-dark transition-colors hover:text-brand-primary">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-brand-primary text-white shadow-xs">
+            <Store size={20} strokeWidth={2.2} aria-hidden="true" />
           </span>
-          <span className="text-lg font-bold tracking-tight text-gray-900">
+          <span className="text-lg font-bold tracking-tight text-brand-ink-dark">
             NusaKasir<span className="text-brand-primary">.</span>
           </span>
         </Link>
 
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-          Ruang kerja bisnis Anda
-        </p>
-        <h1 className="mb-5 text-4xl font-bold leading-tight tracking-tight text-gray-900 sm:text-5xl">
-          Selamat datang
-          <br />
-          <span className="text-brand-primary">kembali.</span>
+        <h1 className="mb-4 text-3xl font-bold tracking-tight text-brand-ink-dark sm:text-4xl">
+          Masuk ke sistem operasional kasir &amp; inventori
         </h1>
-        <p className="max-w-md text-base leading-relaxed text-gray-500">
-          Kelola transaksi, persediaan, dan aktivitas outlet dalam satu sistem
-          yang dirancang untuk bisnis kuliner.
+        <p className="text-sm leading-relaxed text-brand-ink-muted">
+          Kelola transaksi penjualan, pemotongan stok bahan baku, dan laporan outlet F&amp;B secara real-time.
         </p>
 
-        <div className="mt-8 hidden max-w-md rounded-2xl border border-brand-line bg-white p-5 sm:block">
-          <div className="mb-4 flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary">
-              <ShieldAlert size={20} />
+        <div className="mt-8 hidden rounded-xl border border-brand-line bg-brand-surface p-5 shadow-xs sm:block">
+          <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-primary-soft text-brand-primary">
+              <CheckCircle2 size={18} aria-hidden="true" />
             </span>
             <div>
-              <p className="text-sm font-semibold text-gray-900">
-                Data operasional lebih tertata
+              <p className="text-sm font-semibold text-brand-ink-dark">
+                Terintegrasi dengan resep menu (BOM)
               </p>
-              <p className="mt-1 text-xs text-gray-500">
-                Satu tempat untuk kasir dan inventori
+              <p className="mt-1 text-xs text-brand-ink-muted leading-relaxed">
+                Setiap transaksi kasir otomatis memotong stok bahan baku dan mencatat rekap shift harian.
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2 border-t border-brand-line pt-4 text-xs text-gray-500">
-            <span className="size-2 rounded-full bg-brand-primary" />
-            Masuk untuk melanjutkan ke dashboard outlet Anda
           </div>
         </div>
       </section>
 
       <section
         aria-labelledby="login-heading"
-        className="w-full rounded-3xl border border-brand-line bg-white p-6 shadow-lg shadow-gray-200/50 sm:p-9"
+        className="w-full rounded-2xl border border-brand-line bg-brand-surface p-6 shadow-sm sm:p-8"
       >
-        <div className="mb-7">
+        <div className="mb-6">
           <h2
             id="login-heading"
-            className="text-2xl font-bold tracking-tight text-gray-900"
+            className="text-xl font-bold tracking-tight text-brand-ink-dark"
           >
             Masuk ke akun
           </h2>
-          <p className="mt-2 text-sm leading-relaxed text-gray-500">
-            Gunakan email dan kata sandi yang terdaftar.
+          <p className="mt-1 text-xs text-brand-ink-muted">
+            Gunakan email dan kata sandi outlet yang telah terdaftar.
           </p>
         </div>
 
         {errorMsg && (
           <div
             role="alert"
-            className="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+            className="mb-5 flex items-start gap-3 rounded-lg border border-danger/30 bg-danger-soft p-3.5 text-xs text-danger-dark leading-relaxed"
           >
-            <ShieldAlert size={18} className="mt-0.5 shrink-0" />
+            <ShieldAlert size={16} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
             <p>{errorMsg}</p>
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label
               htmlFor="email"
-              className="mb-2 block text-sm font-semibold text-gray-900"
+              className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
             >
               Email
             </label>
@@ -157,19 +148,19 @@ function LoginContent() {
               type="email"
               autoComplete="email"
               required
-              placeholder="nama@bisnis.com"
+              placeholder="nama@outlet.com"
               value={formData.email}
               onChange={(event) =>
                 setFormData({ ...formData, email: event.target.value })
               }
-              className="h-12 rounded-xl border-brand-line bg-white px-4 text-sm text-gray-700 focus-visible:border-brand-primary focus-visible:ring-brand-primary/30"
+              className="h-10"
             />
           </div>
 
           <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-sm font-semibold text-gray-900"
+              className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
             >
               Kata sandi
             </label>
@@ -185,15 +176,15 @@ function LoginContent() {
                 onChange={(event) =>
                   setFormData({ ...formData, password: event.target.value })
                 }
-                className="h-12 rounded-xl border-brand-line bg-white px-4 pr-12 text-sm text-gray-700 focus-visible:border-brand-primary focus-visible:ring-brand-primary/30"
+                className="h-10 pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((isVisible) => !isVisible)}
                 aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
-                className="absolute inset-y-0 right-0 inline-flex min-h-11 w-11 items-center justify-center rounded-r-xl text-gray-400 transition-colors hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary"
+                className="absolute inset-y-0 right-0 inline-flex w-10 items-center justify-center text-brand-ink-muted transition-colors hover:text-brand-ink-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
               </button>
             </div>
           </div>
@@ -201,24 +192,24 @@ function LoginContent() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="h-12 w-full rounded-full bg-brand-primary px-6 text-xs font-bold uppercase text-white shadow-md shadow-brand-primary/20 hover:bg-brand-primary-dark"
+            className="h-10 w-full rounded-lg bg-brand-primary text-sm font-semibold text-white shadow-xs hover:bg-brand-primary-dark"
           >
             {isLoading ? "Memverifikasi..." : "Masuk"}
           </Button>
         </form>
 
-        <div className="my-6 flex items-center gap-3" aria-hidden="true">
+        <div className="my-5 flex items-center gap-3" aria-hidden="true">
           <span className="h-px flex-1 bg-brand-line" />
-          <span className="text-xs text-gray-400">atau</span>
+          <span className="text-xs text-brand-ink-muted">atau</span>
           <span className="h-px flex-1 bg-brand-line" />
         </div>
 
         <button
           type="button"
           onClick={handleGoogleMock}
-          className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-brand-line bg-white px-5 text-sm font-semibold text-gray-700 transition-colors hover:bg-brand-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+          className="inline-flex h-10 w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-lg border border-brand-line bg-brand-surface px-4 text-xs font-medium text-brand-ink-dark transition-colors duration-150 hover:bg-brand-surface-alt focus-visible:ring-2 focus-visible:ring-brand-primary"
         >
-          <svg aria-hidden="true" viewBox="0 0 48 48" className="size-5">
+          <svg aria-hidden="true" viewBox="0 0 48 48" className="size-4 shrink-0">
             <path
               fill="#4285F4"
               d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.8 6.1-15Z"
@@ -236,19 +227,15 @@ function LoginContent() {
               d="M24 12.1c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 6 29.5 4 24 4A20 20 0 0 0 5.8 15.2l6.8 5.3c1.6-4.8 6.1-8.4 11.4-8.4Z"
             />
           </svg>
-          Lanjutkan dengan Google <span className="text-xs text-gray-400">(demo)</span>
+          <span>Masuk dengan Google</span>
         </button>
-
-        <p className="mt-4 text-center text-xs leading-relaxed text-gray-400">
-          Simulasi Google belum terhubung ke OAuth dan tidak akan membuat sesi.
-        </p>
 
         <Link
           href="/"
-          className="mt-7 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-brand-primary"
+          className="mt-6 inline-flex items-center gap-1.5 text-xs font-medium text-brand-ink-muted transition-colors hover:text-brand-primary"
         >
-          <ArrowLeft size={16} />
-          Kembali ke beranda
+          <ArrowLeft size={14} aria-hidden="true" />
+          <span>Kembali ke beranda</span>
         </Link>
       </section>
     </div>
@@ -257,16 +244,14 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-brand-background">
-      <Suspense
-        fallback={
-          <div className="flex min-h-screen items-center justify-center px-4 text-sm font-medium text-gray-500">
-            Memuat halaman masuk...
-          </div>
-        }
-      >
-        <LoginContent />
-      </Suspense>
-    </main>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center font-sans text-sm text-brand-ink-muted">
+          Memuat halaman masuk...
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

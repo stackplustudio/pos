@@ -3,10 +3,23 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { 
-  LayoutDashboard, List, Coffee, Package, Users, LogOut, ReceiptText, MonitorPlay, LayoutGrid, Settings, Truck, Tag,
-  ShoppingBag, TrendingUp,
-  ShieldAlert
+import {
+  LayoutDashboard,
+  List,
+  Coffee,
+  Package,
+  Users,
+  LogOut,
+  ReceiptText,
+  LayoutGrid,
+  Settings,
+  Truck,
+  Tag,
+  ShoppingBag,
+  TrendingUp,
+  ShieldAlert,
+  Store,
+  X,
 } from "lucide-react";
 import Cookies from "js-cookie";
 
@@ -16,7 +29,12 @@ interface UserData {
   role: string;
 }
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -24,7 +42,11 @@ export default function Sidebar() {
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
-      setUserData(JSON.parse(userStr));
+      try {
+        setUserData(JSON.parse(userStr));
+      } catch (err) {
+        console.error("Gagal membaca sesi pengguna", err);
+      }
     }
   }, []);
 
@@ -34,25 +56,24 @@ export default function Sidebar() {
     router.push("/auth/login");
   };
 
-  // Pengelompokan Menu (Grouping)
   const menuGroups = [
     {
-      title: "UTAMA",
+      title: "Utama",
       items: [
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["OWNER", "MANAGER", "KASIR"] },
         { name: "Transaksi", href: "/dashboard/orders", icon: ReceiptText, roles: ["OWNER", "MANAGER"] },
         { name: "Laporan Keuangan", href: "/dashboard/reports", icon: TrendingUp, roles: ["OWNER", "MANAGER"] },
-      ]
+      ],
     },
     {
-      title: "KATALOG",
+      title: "Katalog",
       items: [
         { name: "Kategori", href: "/dashboard/categories", icon: List, roles: ["OWNER", "MANAGER", "KASIR"] },
         { name: "Daftar Menu", href: "/dashboard/menus", icon: Coffee, roles: ["OWNER", "MANAGER", "KASIR"] },
-      ]
+      ],
     },
     {
-      title: "OPERASIONAL",
+      title: "Operasional",
       items: [
         { name: "Manajemen Meja", href: "/dashboard/tables", icon: LayoutGrid, roles: ["OWNER", "MANAGER", "KASIR"] },
         { name: "Inventory", href: "/dashboard/inventory", icon: Package, roles: ["OWNER", "MANAGER"] },
@@ -61,81 +82,134 @@ export default function Sidebar() {
         { name: "Promo & Diskon", href: "/dashboard/discounts", icon: Tag, roles: ["OWNER", "MANAGER"] },
         { name: "Pegawai", href: "/dashboard/users", icon: Users, roles: ["OWNER", "MANAGER"] },
         { name: "Pengaturan", href: "/dashboard/settings", icon: Settings, roles: ["OWNER"] },
-      ]
+      ],
     },
     {
-      title: "SYSTEM ADMIN",
+      title: "System Admin",
       items: [
         { name: "SaaS Control Center", href: "/dashboard/superadmin", icon: ShieldAlert, roles: ["SUPER_ADMIN"] },
-      ]
+      ],
     },
   ];
 
   return (
-    <div className="w-[260px] h-screen bg-[#0053FF] text-white flex flex-col font-inter flex-shrink-0 shadow-xl z-20">
-      
-      {/* Brand Logo */}
-      <div className="p-6 flex items-center gap-3 border-b border-white/20">
-        <div className="bg-white text-[#0053FF] font-black text-lg flex items-center justify-center w-10 h-10 rounded-[10px]">NK</div>
-        <span className="text-xl font-bold tracking-wide">NusaKasir</span>
-      </div>
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-brand-overlay/50 backdrop-blur-xs lg:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
-      {/* Menu List - SCROLLBAR DIHILANGKAN DI SINI */}
-      <div className="flex-1 overflow-y-auto py-6 px-4 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        {menuGroups.map((group, idx) => {
-          // Filter item berdasarkan role
-          const filteredItems = group.items.filter(item => item.roles.includes(userData?.role || ""));
-          if (filteredItems.length === 0) return null;
-
-          return (
-            <div key={idx} className="space-y-1">
-              <p className="px-4 text-[11px] font-bold text-white/50 uppercase tracking-wider mb-2">{group.title}</p>
-              {filteredItems.map((item) => {
-                const isActive = pathname === item.href;
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.name} href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-[12px] transition-all duration-200 ${
-                      isActive ? "bg-white text-[#0053FF] font-bold shadow-md" : "text-white/80 hover:text-white hover:bg-white/10"
-                    }`}
-                  >
-                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                    <span className="text-[14px]">{item.name}</span>
-                  </Link>
-                );
-              })}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-[240px] flex-col border-r border-brand-line bg-brand-surface font-sans transition-transform duration-200 ease-standard lg:static lg:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+        aria-label="Navigasi sidebar"
+      >
+        {/* Brand Header */}
+        <div className="flex h-16 items-center justify-between border-b border-brand-line px-5">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2.5 text-brand-ink-dark transition-colors hover:text-brand-primary"
+            onClick={onClose}
+          >
+            <span className="flex size-9 items-center justify-center rounded-lg bg-brand-primary text-white shadow-xs">
+              <Store size={20} strokeWidth={2.2} aria-hidden="true" />
+            </span>
+            <div className="flex flex-col">
+              <span className="text-base font-bold tracking-tight text-brand-ink-dark">
+                NusaKasir<span className="text-brand-primary">.</span>
+              </span>
+              <span className="text-[11px] font-medium text-brand-ink-muted">POS &amp; Inventory</span>
             </div>
-          );
-        })}
-
-        {/* 🔥 PERBAIKAN DI SINI: Tombol ditaruh di dalam div list menu, dan hanya 1 blok ini saja */}
-        {userData?.role !== "SUPER_ADMIN" && (
-          <Link href="/pos" className="flex items-center gap-3 px-4 py-3 mt-4 rounded-[12px] text-white bg-white/20 border border-white/30 hover:bg-white/30 transition-all duration-200">
-            <MonitorPlay size={20} />
-            <span className="text-[14px] font-bold">Buka Layar POS</span>
           </Link>
-        )}
-      </div> {/* <-- Ini adalah tag penutup div scrollbar */}
 
-      {/* User Profile & Logout */}
-      <div className="p-4 border-t border-white/20 bg-black/10">
-        {userData && (
-          <div className="flex items-center gap-3 px-3 py-2 mb-3 bg-white/10 rounded-[12px]">
-            <div className="w-9 h-9 rounded-full bg-white text-[#0053FF] flex items-center justify-center font-black uppercase text-sm flex-shrink-0">
-              {userData.name.charAt(0)}
+          {/* Close button on mobile */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md p-1.5 text-brand-ink-muted hover:bg-brand-surface-alt hover:text-brand-ink-dark focus-visible:ring-2 focus-visible:ring-brand-primary lg:hidden"
+            aria-label="Tutup navigasi"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Navigation Items */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+          {menuGroups.map((group, idx) => {
+            const filteredItems = group.items.filter((item) =>
+              item.roles.includes(userData?.role || "")
+            );
+            if (filteredItems.length === 0) return null;
+
+            return (
+              <div key={idx} className="space-y-1">
+                <p className="px-3 text-[11px] font-semibold text-brand-ink-muted">
+                  {group.title}
+                </p>
+                <div className="space-y-0.5">
+                  {filteredItems.map((item) => {
+                    const isActive = pathname === item.href;
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={onClose}
+                        className={`group flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand-primary ${
+                          isActive
+                            ? "bg-brand-primary-soft text-brand-primary font-semibold shadow-xs border-l-2 border-brand-primary"
+                            : "text-brand-ink hover:bg-brand-surface-alt hover:text-brand-ink-dark"
+                        }`}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        <Icon
+                          size={18}
+                          className={`shrink-0 transition-colors ${
+                            isActive ? "text-brand-primary" : "text-brand-ink-muted group-hover:text-brand-ink-dark"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <span className="truncate">{item.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* User Card & Logout */}
+        <div className="border-t border-brand-line p-3">
+          <div className="mb-2 flex items-center gap-2.5 rounded-lg bg-brand-surface-alt p-2.5">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-primary-soft text-xs font-bold text-brand-primary">
+              {userData?.name ? userData.name.slice(0, 2).toUpperCase() : "NK"}
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold truncate text-white leading-tight">{userData.name}</p>
-              <p className="text-[11px] font-medium text-white/60 truncate uppercase">{userData.role}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold text-brand-ink-dark">
+                {userData?.name || "Pengguna"}
+              </p>
+              <p className="truncate text-[11px] text-brand-ink-muted">
+                {userData?.role || "Staff"}
+              </p>
             </div>
           </div>
-        )}
-        <button onClick={handleLogout} className="flex items-center justify-center w-full gap-2 px-4 py-2.5 rounded-[12px] text-white/80 hover:text-white hover:bg-red-500 transition-all duration-200">
-          <LogOut size={18} />
-          <span className="text-[14px] font-medium">Log Out</span>
-        </button>
-      </div>
-    </div>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-brand-line bg-brand-surface px-3 text-xs font-medium text-danger hover:bg-danger-soft transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-danger"
+          >
+            <LogOut size={14} aria-hidden="true" />
+            <span>Keluar Akun</span>
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }

@@ -25,6 +25,7 @@ interface Order {
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -33,12 +34,12 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await api.get('/orders');
+      const response = await api.get("/orders");
       setOrders(response.data);
-    } catch (error: any) {
-      // Jika 403 (Kasir memaksa masuk dashboard), kita cegah
-      if (error.response?.status === 403) {
-        toast.error("Anda tidak memiliki akses ke halaman ini.");
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number } };
+      if (err.response?.status === 403) {
+        toast.error("Anda tidak memiliki akses ke halaman transaksi.");
       } else {
         toast.error("Gagal mengambil data riwayat transaksi");
       }
@@ -48,76 +49,119 @@ export default function OrdersPage() {
   };
 
   const formatRp = (angka: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(angka);
   };
 
   const formatDate = (dateString: string) => {
-    return new Intl.DateTimeFormat('id-ID', { 
-      day: '2-digit', month: 'short', year: 'numeric', 
-      hour: '2-digit', minute: '2-digit' 
+    return new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(new Date(dateString));
   };
 
+  const filteredOrders = orders.filter((order) =>
+    order.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="max-w-[1280px] mx-auto font-inter text-[#00232C]">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div className="mx-auto max-w-6xl font-sans text-brand-ink">
+      {/* Header Halaman & Search */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[40px] font-bold leading-tight">Riwayat Transaksi</h1>
-          <p className="text-[#00232C]/70 mt-1">Pantau semua pesanan yang masuk dari kasir.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-brand-ink-dark sm:text-3xl">
+            Riwayat Transaksi
+          </h1>
+          <p className="mt-1 text-sm text-brand-ink-muted">
+            Pantau seluruh catatan pesanan masuk dari layar POS kasir.
+          </p>
         </div>
-        <div className="relative">
-          <input 
-            type="text" 
-            placeholder="Cari ID Transaksi..."
-            className="h-12 pl-10 pr-4 bg-white/60 border border-[#00232C]/10 rounded-full focus:border-[#0053FF] outline-none"
+
+        <div className="relative w-full sm:w-64">
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-ink-muted"
+            aria-hidden="true"
           />
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#00232C]/40" />
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Cari ID transaksi..."
+            className="h-10 w-full rounded-md border border-brand-line-strong bg-brand-surface pl-9 pr-3 text-xs text-brand-ink-dark placeholder:text-brand-ink-muted outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+            aria-label="Cari transaksi"
+          />
         </div>
       </div>
 
-      {/* Tabel */}
-      <div className="bg-white/60 backdrop-blur-[20px] border border-white/55 shadow-[0_10px_30px_rgba(0,35,44,0.08)] rounded-[20px] overflow-hidden">
+      {/* Tabel Transaksi */}
+      <div className="overflow-hidden rounded-xl border border-brand-line bg-brand-surface shadow-xs">
         {isLoading ? (
-          <div className="flex justify-center py-20"><p className="text-[#00232C]/50">Memuat transaksi...</p></div>
-        ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center py-20 text-center">
-            <div className="bg-[#00232C]/5 p-4 rounded-full mb-4"><ReceiptText className="text-[#00232C]/40" size={32} /></div>
-            <h3 className="text-xl font-bold mb-2">Belum ada transaksi</h3>
-            <p className="text-[#00232C]/60">Penjualan dari POS akan muncul di sini.</p>
+          <div className="flex h-48 items-center justify-center text-xs text-brand-ink-muted">
+            Memuat transaksi…
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="flex h-56 flex-col items-center justify-center p-6 text-center text-xs text-brand-ink-muted">
+            <ReceiptText size={32} className="mb-2 text-brand-line-strong" aria-hidden="true" />
+            <p className="font-semibold text-brand-ink-dark">Belum ada transaksi</p>
+            <p className="mt-1 text-brand-ink-muted">
+              {searchTerm ? "Tidak ditemukan transaksi dengan ID tersebut." : "Pesanan dari POS kasir akan otomatis tercatat di sini."}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full border-collapse text-left text-xs">
               <thead>
-                <tr className="border-b border-[#00232C]/10 bg-white/40">
-                  <th className="p-5 font-semibold text-[14px]">Waktu</th>
-                  <th className="p-5 font-semibold text-[14px]">ID / Tipe</th>
-                  <th className="p-5 font-semibold text-[14px]">Kasir</th>
-                  <th className="p-5 font-semibold text-[14px]">Metode</th>
-                  <th className="p-5 font-semibold text-[14px]">Total</th>
-                  <th className="p-5 font-semibold text-[14px] text-right">Detail</th>
+                <tr className="border-b border-brand-line bg-brand-surface-alt text-brand-ink-dark font-semibold">
+                  <th className="px-5 py-3">Waktu</th>
+                  <th className="px-5 py-3">ID &amp; Tipe</th>
+                  <th className="px-5 py-3">Kasir Bertugas</th>
+                  <th className="px-5 py-3">Metode Bayar</th>
+                  <th className="px-5 py-3">Total Tagihan</th>
+                  <th className="px-5 py-3 text-right">Detail</th>
                 </tr>
               </thead>
-              <tbody>
-                {orders.map((order) => (
-                  <tr key={order.id} className="border-b border-[#00232C]/5 hover:bg-white/40 transition-colors">
-                    <td className="p-5 text-sm">{formatDate(order.createdAt)}</td>
-                    <td className="p-5">
-                      <p className="font-semibold text-xs text-[#0053FF]">{order.id.slice(-6).toUpperCase()}</p>
-                      <p className="text-xs text-[#00232C]/60 font-bold mt-1">{order.tipe}</p>
+              <tbody className="divide-y divide-brand-line">
+                {filteredOrders.map((order) => (
+                  <tr
+                    key={order.id}
+                    className="transition-colors duration-150 hover:bg-brand-surface-alt/50"
+                  >
+                    <td className="px-5 py-3.5 text-brand-ink-muted tabular-nums">
+                      {formatDate(order.createdAt)}
                     </td>
-                    <td className="p-5 text-sm">{order.kasir?.name || 'Unknown'}</td>
-                    <td className="p-5">
-                      <span className="px-2 py-1 bg-[#FBFBF3] border border-[#00232C]/10 rounded-md text-[11px] font-bold">
-                        {order.metode_bayar || 'TUNAI'}
+                    <td className="px-5 py-3.5">
+                      <p className="font-mono text-xs font-semibold text-brand-primary">
+                        #{order.id.slice(-6).toUpperCase()}
+                      </p>
+                      <p className="text-[11px] font-medium text-brand-ink-muted mt-0.5">
+                        {order.tipe}
+                      </p>
+                    </td>
+                    <td className="px-5 py-3.5 text-brand-ink-dark font-medium">
+                      {order.kasir?.name || "Staff"}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="rounded-md border border-brand-line bg-brand-surface-alt px-2 py-0.5 text-[11px] font-semibold text-brand-ink-dark">
+                        {order.metode_bayar || "TUNAI"}
                       </span>
                     </td>
-                    <td className="p-5 font-bold text-[#0053FF]">{formatRp(order.total)}</td>
-                    <td className="p-5 text-right">
-                      {/* Tombol detail (Bisa di-expand menjadi modal struk) */}
-                      <button className="p-2 text-[#00232C]/60 hover:bg-[#0053FF]/10 hover:text-[#0053FF] rounded-full transition-colors">
-                        <Eye size={18} />
+                    <td className="px-5 py-3.5 font-bold text-brand-primary tabular-nums">
+                      {formatRp(order.total)}
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <button
+                        type="button"
+                        className="inline-flex size-8 items-center justify-center rounded-lg text-brand-ink-muted transition-colors duration-150 hover:bg-brand-surface-alt hover:text-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary"
+                        aria-label={`Lihat detail pesanan #${order.id.slice(-6)}`}
+                      >
+                        <Eye size={15} aria-hidden="true" />
                       </button>
                     </td>
                   </tr>

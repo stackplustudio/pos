@@ -5,90 +5,163 @@ import { TrendingUp, TrendingDown, DollarSign, Calendar } from "lucide-react";
 import { api } from "@/lib/axios";
 import { toast } from "react-hot-toast";
 
+interface ProfitLossReport {
+  pemasukan: number;
+  pengeluaran: number;
+  labaBersih: number;
+}
+
 export default function ProfitLossPage() {
-  const [report, setReport] = useState({ pemasukan: 0, pengeluaran: 0, labaBersih: 0 });
+  const [report, setReport] = useState<ProfitLossReport>({
+    pemasukan: 0,
+    pengeluaran: 0,
+    labaBersih: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filter Bulan
+  // Filter Periode
   const currentDate = new Date();
-  const [filterMonth, setFilterMonth] = useState(currentDate.getMonth()); // 0-11
+  const [filterMonth, setFilterMonth] = useState(currentDate.getMonth());
   const [filterYear, setFilterYear] = useState(currentDate.getFullYear());
 
   useEffect(() => {
     fetchReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterMonth, filterYear]);
 
   const fetchReport = async () => {
     setIsLoading(true);
     try {
-      // Format tanggal awal dan akhir bulan yang dipilih
       const start = new Date(filterYear, filterMonth, 1).toISOString();
       const end = new Date(filterYear, filterMonth + 1, 0, 23, 59, 59).toISOString();
 
       const res = await api.get(`/analytics/profit-loss?startDate=${start}&endDate=${end}`);
       setReport(res.data);
-    } catch (error) {
+    } catch {
       toast.error("Gagal memuat laporan keuangan");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatRp = (num: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+  const formatRp = (num: number) =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(num);
 
-  const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  const months = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
 
   return (
-    <div className="max-w-[1280px] mx-auto font-inter text-[#00232C]">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div className="mx-auto max-w-6xl font-sans text-brand-ink">
+      {/* Header Halaman & Filter Periode */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[40px] font-bold leading-tight">Laba Rugi (P&L)</h1>
-          <p className="text-[#00232C]/70 mt-1">Pantau arus kas masuk dan keluar secara real-time.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-brand-ink-dark sm:text-3xl">
+            Laporan Laba Rugi
+          </h1>
+          <p className="mt-1 text-sm text-brand-ink-muted">
+            Pantau arus kas pemasukan POS dan pengeluaran pembelian bahan baku (PO).
+          </p>
         </div>
-        
+
         {/* Filter Bulan & Tahun */}
-        <div className="flex items-center gap-3 bg-white p-2 rounded-[16px] shadow-sm border border-[#00232C]/10">
-          <Calendar size={20} className="text-[#0053FF] ml-2" />
-          <select value={filterMonth} onChange={(e) => setFilterMonth(Number(e.target.value))} className="bg-transparent font-semibold outline-none text-[#00232C]">
-            {months.map((m, i) => <option key={i} value={i}>{m}</option>)}
+        <div className="inline-flex items-center gap-2 rounded-lg border border-brand-line bg-brand-surface p-1.5 shadow-xs">
+          <Calendar size={16} className="ml-1 text-brand-primary" aria-hidden="true" />
+          <select
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(Number(e.target.value))}
+            className="h-8 rounded bg-transparent px-2 text-xs font-semibold text-brand-ink-dark outline-none focus-visible:ring-1 focus-visible:ring-brand-primary"
+            aria-label="Pilih Bulan"
+          >
+            {months.map((m, i) => (
+              <option key={i} value={i}>
+                {m}
+              </option>
+            ))}
           </select>
-          <select value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))} className="bg-transparent font-semibold outline-none text-[#00232C] pr-2">
-            {[currentDate.getFullYear() - 1, currentDate.getFullYear()].map(y => <option key={y} value={y}>{y}</option>)}
+          <select
+            value={filterYear}
+            onChange={(e) => setFilterYear(Number(e.target.value))}
+            className="h-8 rounded bg-transparent px-2 text-xs font-semibold text-brand-ink-dark outline-none focus-visible:ring-1 focus-visible:ring-brand-primary"
+            aria-label="Pilih Tahun"
+          >
+            {[currentDate.getFullYear() - 1, currentDate.getFullYear()].map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20"><p className="text-[#00232C]/50 animate-pulse">Menghitung laporan...</p></div>
+        <div className="flex h-56 items-center justify-center text-xs text-brand-ink-muted">
+          Menghitung rekapitulasi keuangan…
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {/* Pemasukan */}
-          <div className="bg-white/60 backdrop-blur-[20px] border border-white/55 shadow-[0_10px_30px_rgba(0,35,44,0.08)] rounded-[20px] p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="bg-green-100 text-green-600 p-4 rounded-[16px]"><TrendingUp size={28} /></div>
-              <h3 className="text-[#00232C]/60 font-bold text-sm uppercase tracking-wider">Total Pemasukan<br/>(Omzet POS)</h3>
+          <div className="rounded-xl border border-brand-line bg-brand-surface p-5 shadow-xs">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-xs font-medium text-brand-ink-muted">Total pemasukan (POS)</span>
+              <span className="flex size-8 items-center justify-center rounded-md bg-success-soft text-success">
+                <TrendingUp size={16} aria-hidden="true" />
+              </span>
             </div>
-            <h2 className="text-3xl font-black text-[#00232C]">{formatRp(report.pemasukan)}</h2>
+            <p className="text-2xl font-bold tracking-tight text-brand-ink-dark tabular-nums">
+              {formatRp(report.pemasukan)}
+            </p>
           </div>
 
           {/* Pengeluaran */}
-          <div className="bg-white/60 backdrop-blur-[20px] border border-white/55 shadow-[0_10px_30px_rgba(0,35,44,0.08)] rounded-[20px] p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="bg-red-100 text-red-600 p-4 rounded-[16px]"><TrendingDown size={28} /></div>
-              <h3 className="text-[#00232C]/60 font-bold text-sm uppercase tracking-wider">Total Pengeluaran<br/>(Belanja PO)</h3>
+          <div className="rounded-xl border border-brand-line bg-brand-surface p-5 shadow-xs">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-xs font-medium text-brand-ink-muted">Total pengeluaran (PO)</span>
+              <span className="flex size-8 items-center justify-center rounded-md bg-danger-soft text-danger">
+                <TrendingDown size={16} aria-hidden="true" />
+              </span>
             </div>
-            <h2 className="text-3xl font-black text-[#00232C]">{formatRp(report.pengeluaran)}</h2>
+            <p className="text-2xl font-bold tracking-tight text-brand-ink-dark tabular-nums">
+              {formatRp(report.pengeluaran)}
+            </p>
           </div>
 
           {/* Laba Bersih */}
-          <div className={`backdrop-blur-[20px] border shadow-[0_15px_40px_rgba(0,35,44,0.12)] rounded-[20px] p-8 ${report.labaBersih >= 0 ? 'bg-[#0053FF] text-white border-[#0053FF]/50' : 'bg-red-600 text-white border-red-500'}`}>
-            <div className="flex items-center gap-4 mb-6">
-              <div className="bg-white/20 p-4 rounded-[16px]"><DollarSign size={28} /></div>
-              <h3 className="font-bold text-sm uppercase tracking-wider text-white/80">Laba Bersih<br/>(Net Profit)</h3>
+          <div
+            className={`rounded-xl border p-5 shadow-xs text-white ${
+              report.labaBersih >= 0
+                ? "border-brand-primary bg-brand-primary"
+                : "border-danger bg-danger"
+            }`}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-xs font-medium text-white/80">Laba bersih periode ini</span>
+              <span className="flex size-8 items-center justify-center rounded-md bg-white/20 text-white">
+                <DollarSign size={16} aria-hidden="true" />
+              </span>
             </div>
-            <h2 className="text-4xl font-black">{formatRp(report.labaBersih)}</h2>
-            <p className="mt-4 text-sm text-white/70">
-              {report.labaBersih >= 0 ? "Bagus! Bisnis Anda profit di periode ini." : "Waspada! Pengeluaran lebih besar dari pemasukan."}
+            <p className="text-2xl font-bold tracking-tight tabular-nums">
+              {formatRp(report.labaBersih)}
+            </p>
+            <p className="mt-2 text-xs text-white/80">
+              {report.labaBersih >= 0
+                ? "Operasional sehat dengan surplus keuntungan."
+                : "Pengeluaran belanja melebihi omzet pemasukan."}
             </p>
           </div>
         </div>

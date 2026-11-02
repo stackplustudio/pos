@@ -38,5 +38,5 @@ next-env.d.ts
 /docs
 /.codebase-memory
 /.snapshots
-
+/.hallmark
 Set-Content -Path ".gitignore" -Value $ignoreContent -Force

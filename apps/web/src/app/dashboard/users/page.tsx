@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Users as UsersIcon, UserX, X } from "lucide-react";
+import { Plus, UserX, Users as UsersIcon, X } from "lucide-react";
 import { api } from "@/lib/axios";
 import { toast } from "react-hot-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface User {
   id: string;
@@ -28,9 +30,9 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get('/users');
+      const response = await api.get("/users");
       setUsers(response.data);
-    } catch (error) {
+    } catch {
       toast.error("Gagal mengambil data pegawai");
     } finally {
       setIsLoading(false);
@@ -41,134 +43,236 @@ export default function UsersPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.post('/users', formData);
+      await api.post("/users", formData);
       toast.success("Pegawai berhasil ditambahkan!");
       setIsModalOpen(false);
       setFormData({ name: "", email: "", password: "", role: "KASIR" });
       fetchUsers();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Gagal menambahkan pegawai");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Gagal menambahkan pegawai");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeactivate = async (id: string) => {
-    if(!confirm("Yakin ingin menonaktifkan pegawai ini?")) return;
+    if (!confirm("Yakin ingin menonaktifkan pegawai ini?")) return;
     try {
       await api.delete(`/users/${id}`);
       toast.success("Pegawai dinonaktifkan");
       fetchUsers();
-    } catch (error) {
+    } catch {
       toast.error("Gagal menonaktifkan pegawai");
     }
   };
 
   return (
-    <div className="max-w-[1280px] mx-auto font-inter text-[#00232C]">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div className="mx-auto max-w-6xl font-sans text-brand-ink">
+      {/* Header Halaman */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[40px] font-bold leading-tight">Manajemen Pegawai</h1>
-          <p className="text-[#00232C]/70 mt-1">Kelola akses Kasir, Manager, dan staff dapur Anda.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-brand-ink-dark sm:text-3xl">
+            Manajemen Pegawai
+          </h1>
+          <p className="mt-1 text-sm text-brand-ink-muted">
+            Kelola hak akses kasir, manager, dan staf operasional outlet.
+          </p>
         </div>
-        <button 
+
+        <Button
+          type="button"
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-[#0053FF] text-white px-6 py-3 rounded-full font-medium shadow-[0_4px_12px_rgba(0,83,255,0.25)] hover:-translate-y-[1px] transition-all"
+          className="gap-2 self-start sm:self-auto"
         >
-          <Plus size={18} /> Tambah Pegawai
-        </button>
+          <Plus size={16} aria-hidden="true" />
+          <span>Tambah Pegawai</span>
+        </Button>
       </div>
 
-      <div className="bg-white/60 backdrop-blur-[20px] border border-white/55 shadow-[0_10px_30px_rgba(0,35,44,0.08)] rounded-[20px] overflow-hidden">
+      {/* Tabel Data Pegawai */}
+      <div className="overflow-hidden rounded-xl border border-brand-line bg-brand-surface shadow-xs">
         {isLoading ? (
-          <div className="flex justify-center py-20"><p className="text-[#00232C]/50">Memuat data pegawai...</p></div>
+          <div className="flex h-48 items-center justify-center text-xs text-brand-ink-muted">
+            Memuat data pegawai…
+          </div>
         ) : users.length === 0 ? (
-          <div className="flex flex-col items-center py-20 text-center">
-            <div className="bg-[#00232C]/5 p-4 rounded-full mb-4"><UsersIcon className="text-[#00232C]/40" size={32} /></div>
-            <h3 className="text-xl font-bold mb-2">Belum ada pegawai</h3>
+          <div className="flex h-56 flex-col items-center justify-center p-6 text-center text-xs text-brand-ink-muted">
+            <UsersIcon size={32} className="mb-2 text-brand-line-strong" aria-hidden="true" />
+            <p className="font-semibold text-brand-ink-dark">Belum ada pegawai</p>
+            <p className="mt-1 text-brand-ink-muted">Daftarkan akun staf kasir untuk memulai transaksi.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full border-collapse text-left text-xs">
               <thead>
-                <tr className="border-b border-[#00232C]/10 bg-white/40">
-                  <th className="p-5 font-semibold text-[14px]">Nama & Email</th>
-                  <th className="p-5 font-semibold text-[14px]">Role</th>
-                  <th className="p-5 font-semibold text-[14px]">Status</th>
-                  <th className="p-5 font-semibold text-[14px] text-right">Aksi</th>
+                <tr className="border-b border-brand-line bg-brand-surface-alt text-brand-ink-dark font-semibold">
+                  <th className="px-5 py-3">Nama &amp; Email</th>
+                  <th className="px-5 py-3">Role</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id} className="border-b border-[#00232C]/5 hover:bg-white/40 transition-colors">
-                    <td className="p-5">
-                      <p className="font-bold">{user.name}</p>
-                      <p className="text-sm text-[#00232C]/60">{user.email}</p>
-                    </td>
-                    <td className="p-5">
-                      <span className={`px-2 py-1 rounded-md text-[11px] font-bold ${
-                        user.role === 'OWNER' ? 'bg-[#F59E0B]/10 text-[#F59E0B]' : 'bg-[#0053FF]/10 text-[#0053FF]'
-                      }`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="p-5">
-                      <span className={`px-2 py-1 rounded-md text-[11px] font-bold ${
-                        user.status === 'ACTIVE' ? 'bg-green-100 text-[#16A34A]' : 'bg-red-100 text-[#DC2626]'
-                      }`}>
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="p-5 text-right">
-                      {user.role !== 'OWNER' && (
-                        <button onClick={() => handleDeactivate(user.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Nonaktifkan">
-                          <UserX size={18} />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-brand-line">
+                {users.map((user) => {
+                  const isOwner = user.role === "OWNER";
+                  const isActive = user.status === "ACTIVE";
+                  return (
+                    <tr
+                      key={user.id}
+                      className="transition-colors duration-150 hover:bg-brand-surface-alt/50"
+                    >
+                      <td className="px-5 py-3.5">
+                        <p className="font-semibold text-brand-ink-dark">{user.name}</p>
+                        <p className="text-[11px] text-brand-ink-muted mt-0.5">{user.email}</p>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                            isOwner
+                              ? "bg-warning-soft text-warning"
+                              : "bg-brand-primary-soft text-brand-primary"
+                          }`}
+                        >
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                            isActive
+                              ? "bg-success-soft text-success"
+                              : "bg-danger-soft text-danger"
+                          }`}
+                        >
+                          {user.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        {!isOwner && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeactivate(user.id)}
+                            className="inline-flex size-8 items-center justify-center rounded-lg text-danger hover:bg-danger-soft transition-colors"
+                            aria-label={`Nonaktifkan pegawai ${user.name}`}
+                          >
+                            <UserX size={15} aria-hidden="true" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* MODAL TAMBAH PEGAWAI */}
+      {/* Modal Tambah Pegawai */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#00232C]/40 backdrop-blur-sm">
-          <div className="bg-white/90 backdrop-blur-[24px] border border-white/60 w-full max-w-md rounded-[24px] shadow-[0_20px_50px_rgba(0,35,44,0.15)] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-[#00232C]/10 bg-white">
-              <h3 className="text-xl font-bold">Tambah Pegawai Baru</h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 text-[#00232C]/50 hover:text-[#00232C] hover:bg-black/5 rounded-full transition-colors"><X size={20} /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-overlay/50 backdrop-blur-xs p-4">
+          <div className="w-full max-w-sm rounded-xl border border-brand-line bg-brand-surface p-5 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-bold text-brand-ink-dark">Tambah Pegawai Baru</h3>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-md p-1 text-brand-ink-muted hover:bg-brand-surface-alt hover:text-brand-ink-dark"
+                aria-label="Tutup modal"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 bg-[#FBFBF3] space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold mb-2">Nama Lengkap</label>
-                <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full h-12 px-4 border border-[#00232C]/20 rounded-[12px] focus:border-[#0053FF] outline-none" />
+                <label
+                  htmlFor="pegawaiName"
+                  className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+                >
+                  Nama Lengkap
+                </label>
+                <Input
+                  id="pegawaiName"
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Contoh: Rian Pratama"
+                  className="h-10 text-xs"
+                />
               </div>
+
               <div>
-                <label className="block text-sm font-semibold mb-2">Email Login</label>
-                <input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full h-12 px-4 border border-[#00232C]/20 rounded-[12px] focus:border-[#0053FF] outline-none" />
+                <label
+                  htmlFor="pegawaiEmail"
+                  className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+                >
+                  Email Login
+                </label>
+                <Input
+                  id="pegawaiEmail"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="rian@outlet.com"
+                  className="h-10 text-xs"
+                />
               </div>
+
               <div>
-                <label className="block text-sm font-semibold mb-2">Password Sementara</label>
-                <input type="text" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full h-12 px-4 border border-[#00232C]/20 rounded-[12px] focus:border-[#0053FF] outline-none" />
+                <label
+                  htmlFor="pegawaiPassword"
+                  className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+                >
+                  Password Sementara
+                </label>
+                <Input
+                  id="pegawaiPassword"
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Minimal 6 karakter"
+                  className="h-10 text-xs"
+                />
               </div>
+
               <div>
-                <label className="block text-sm font-semibold mb-2">Hak Akses (Role)</label>
-                <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full h-12 px-4 border border-[#00232C]/20 rounded-[12px] focus:border-[#0053FF] outline-none bg-white">
+                <label
+                  htmlFor="pegawaiRole"
+                  className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+                >
+                  Hak Akses (Role)
+                </label>
+                <select
+                  id="pegawaiRole"
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className="h-10 w-full rounded-md border border-brand-line-strong bg-brand-surface px-3 text-xs text-brand-ink-dark outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                >
                   <option value="KASIR">KASIR</option>
                   <option value="MANAGER">MANAGER</option>
                   <option value="DAPUR">STAF DAPUR</option>
                 </select>
               </div>
-              <div className="mt-8 pt-4 flex gap-3 border-t border-[#00232C]/10">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 text-[#00232C]/60 font-medium hover:bg-[#00232C]/5 rounded-full">Batal</button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 py-3 bg-[#0053FF] text-white font-bold rounded-full disabled:opacity-50 hover:-translate-y-[1px] transition-transform shadow-[0_4px_12px_rgba(0,83,255,0.25)]">
-                  Simpan Pegawai
-                </button>
+
+              <div className="mt-6 flex justify-end gap-2.5 border-t border-brand-line pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Menyimpan…" : "Simpan Pegawai"}
+                </Button>
               </div>
             </form>
           </div>

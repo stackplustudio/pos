@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Image as ImageIcon, BookOpen, X } from "lucide-react";
+import { Plus, Edit2, Trash2, BookOpen, X, Coffee, Layers } from "lucide-react";
 import { api } from "@/lib/axios";
 import { toast } from "react-hot-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Category {
   id: string;
@@ -39,7 +41,7 @@ export default function MenusPage() {
   const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState<MenuItem | null>(null);
   const [menuRecipes, setMenuRecipes] = useState<Recipe[]>([]);
-  
+
   // Form Resep State
   const [selectedIngredientId, setSelectedIngredientId] = useState("");
   const [takaran, setTakaran] = useState("");
@@ -47,14 +49,14 @@ export default function MenusPage() {
 
   useEffect(() => {
     fetchMenus();
-    fetchIngredients(); // Tarik data bahan baku untuk dropdown modal
+    fetchIngredients();
   }, []);
 
   const fetchMenus = async () => {
     try {
-      const response = await api.get('/menu-items');
+      const response = await api.get("/menu-items");
       setMenus(response.data);
-    } catch (error) {
+    } catch {
       toast.error("Gagal mengambil data menu");
     } finally {
       setIsLoading(false);
@@ -63,13 +65,12 @@ export default function MenusPage() {
 
   const fetchIngredients = async () => {
     try {
-      const response = await api.get('/ingredients');
+      const response = await api.get("/ingredients");
       setIngredients(response.data);
-    } catch (error: any) {
-      // Jika statusnya 403 (Kasir), abaikan saja secara diam-diam.
-      // Jika error lain, baru tampilkan log.
-      if (error.response?.status !== 403) {
-        console.error("Gagal load bahan baku", error);
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number } };
+      if (err.response?.status !== 403) {
+        console.error("Gagal memuat bahan baku", error);
       }
     }
   };
@@ -77,12 +78,12 @@ export default function MenusPage() {
   const openRecipeModal = async (menu: MenuItem) => {
     setSelectedMenu(menu);
     setIsRecipeModalOpen(true);
-    setMenuRecipes([]); // Reset state
-    
+    setMenuRecipes([]);
+
     try {
       const res = await api.get(`/recipes/menu/${menu.id}`);
       setMenuRecipes(res.data);
-    } catch (error) {
+    } catch {
       toast.error("Gagal mengambil komposisi resep");
     }
   };
@@ -93,22 +94,19 @@ export default function MenusPage() {
 
     setIsSavingRecipe(true);
     try {
-      await api.post('/recipes', {
+      await api.post("/recipes", {
         menuItemId: selectedMenu.id,
         ingredientId: selectedIngredientId,
-        jumlah_takaran: parseFloat(takaran)
+        jumlah_takaran: parseFloat(takaran),
       });
-      toast.success("Bahan berhasil ditambahkan ke resep");
-      
-      // Refresh list resep
+
       const res = await api.get(`/recipes/menu/${selectedMenu.id}`);
       setMenuRecipes(res.data);
-      
-      // Reset form
+      toast.success("Bahan berhasil ditambahkan ke resep");
       setSelectedIngredientId("");
       setTakaran("");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Gagal menambahkan bahan");
+    } catch {
+      toast.error("Gagal menyimpan resep");
     } finally {
       setIsSavingRecipe(false);
     }
@@ -117,168 +115,232 @@ export default function MenusPage() {
   const handleRemoveRecipe = async (recipeId: string) => {
     try {
       await api.delete(`/recipes/${recipeId}`);
-      setMenuRecipes(prev => prev.filter(r => r.id !== recipeId));
+      setMenuRecipes((prev) => prev.filter((r) => r.id !== recipeId));
       toast.success("Bahan dihapus dari resep");
-    } catch (error) {
+    } catch {
       toast.error("Gagal menghapus bahan");
     }
   };
 
   const formatRupiah = (angka: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(angka);
   };
 
   return (
-    <div className="max-w-[1280px] mx-auto font-inter text-[#00232C] relative">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div className="mx-auto max-w-6xl font-sans text-brand-ink">
+      {/* Header Halaman */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[40px] font-bold leading-tight">Daftar Menu & Resep</h1>
-          <p className="text-[#00232C]/70 mt-1">Kelola item produk dan komposisi bahan baku (BOM).</p>
+          <h1 className="text-2xl font-bold tracking-tight text-brand-ink-dark sm:text-3xl">
+            Daftar Menu &amp; Resep
+          </h1>
+          <p className="mt-1 text-sm text-brand-ink-muted">
+            Kelola katalog produk outlet dan takaran komposisi bahan baku (BOM).
+          </p>
         </div>
-        
-        <button className="flex items-center gap-2 bg-[#0053FF] text-white px-6 py-3 rounded-full font-medium shadow-[0_4px_12px_rgba(0,83,255,0.25)] hover:-translate-y-[1px] transition-all duration-200">
-          <Plus size={18} />
-          Tambah Menu
-        </button>
+
+        <Button
+          type="button"
+          className="gap-2 self-start sm:self-auto"
+        >
+          <Plus size={16} aria-hidden="true" />
+          <span>Tambah Menu</span>
+        </Button>
       </div>
 
-      {/* Grid Layout untuk Menu Cards */}
+      {/* Grid Katalog Menu */}
       {isLoading ? (
-        <div className="flex justify-center items-center py-20">
-          <p className="text-[#00232C]/50">Memuat data menu...</p>
+        <div className="flex h-56 items-center justify-center text-xs text-brand-ink-muted">
+          Memuat data menu…
         </div>
       ) : menus.length === 0 ? (
-        <div className="bg-white/60 backdrop-blur-[20px] border border-white/55 rounded-[20px] p-10 flex flex-col items-center justify-center text-center shadow-sm">
-          <div className="bg-[#00232C]/5 p-4 rounded-full mb-4">
-            <ImageIcon className="text-[#00232C]/40" size={32} />
-          </div>
-          <h3 className="text-xl font-bold mb-2">Belum ada menu</h3>
-          <p className="text-[#00232C]/60 max-w-sm">Anda belum menambahkan menu apapun.</p>
+        <div className="flex h-56 flex-col items-center justify-center rounded-xl border border-dashed border-brand-line bg-brand-surface p-6 text-center text-xs text-brand-ink-muted">
+          <Coffee size={32} className="mb-2 text-brand-line-strong" aria-hidden="true" />
+          <p className="font-semibold text-brand-ink-dark">Belum ada menu</p>
+          <p className="mt-1 text-brand-ink-muted">Tambahkan menu pertama untuk mulai melayani transaksi kasir.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {menus.map((menu) => (
-            <div 
-              key={menu.id} 
-              className="bg-white/72 backdrop-blur-[24px] border border-white/65 shadow-[0_10px_30px_rgba(0,35,44,0.08)] rounded-[20px] p-5 flex flex-col transition-transform duration-200 hover:-translate-y-[4px]"
+            <div
+              key={menu.id}
+              className="flex flex-col justify-between rounded-xl border border-brand-line bg-brand-surface p-4 shadow-xs transition-colors duration-150 hover:border-brand-primary"
             >
-              <div className="flex justify-between items-start mb-4">
-                <span className="px-3 py-1 bg-[#0053FF]/10 text-[#0053FF] text-[12px] font-semibold rounded-full">
-                  {menu.category?.nama_kategori || 'Tanpa Kategori'}
-                </span>
-                <span className={`px-2 py-1 text-[12px] font-bold rounded-full ${menu.status ? 'bg-green-100 text-[#16A34A]' : 'bg-red-100 text-[#DC2626]'}`}>
-                  {menu.status ? 'Tersedia' : 'Habis (86)'}
-                </span>
+              <div>
+                <div className="mb-3 flex items-start justify-between gap-2">
+                  <span className="rounded-md bg-brand-surface-alt px-2 py-0.5 text-[11px] font-medium text-brand-ink-muted">
+                    {menu.category?.nama_kategori || "Tanpa Kategori"}
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      menu.status
+                        ? "bg-success-soft text-success"
+                        : "bg-danger-soft text-danger"
+                    }`}
+                  >
+                    {menu.status ? "Tersedia" : "Habis"}
+                  </span>
+                </div>
+
+                <h2 className="text-base font-semibold text-brand-ink-dark line-clamp-1">
+                  {menu.nama}
+                </h2>
+                <p className="mt-1 text-base font-bold text-brand-primary tabular-nums">
+                  {formatRupiah(menu.harga_jual)}
+                </p>
               </div>
-              
-              <h3 className="text-[22px] font-bold leading-tight mb-2">{menu.nama}</h3>
-              <p className="text-[#0053FF] font-bold text-lg mb-6">{formatRupiah(menu.harga_jual)}</p>
-              
-              <div className="flex justify-end gap-2 border-t border-[#00232C]/10 pt-4 mt-auto">
-                <button 
+
+              <div className="mt-4 flex items-center justify-between border-t border-brand-line pt-3">
+                <button
+                  type="button"
                   onClick={() => openRecipeModal(menu)}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#00232C] text-white text-sm font-medium rounded-full hover:bg-[#00232C]/80 transition-colors mr-auto"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand-line bg-brand-surface px-2.5 py-1.5 text-xs font-medium text-brand-ink-dark transition-colors duration-150 hover:bg-brand-surface-alt focus-visible:ring-2 focus-visible:ring-brand-primary"
                 >
-                  <BookOpen size={16} /> Resep
+                  <BookOpen size={14} aria-hidden="true" />
+                  <span>Resep (BOM)</span>
                 </button>
-                <button className="p-2 text-[#00232C]/70 hover:bg-[#0053FF]/10 hover:text-[#0053FF] rounded-full transition-colors">
-                  <Edit2 size={18} />
-                </button>
-                <button className="p-2 text-[#00232C]/70 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors">
-                  <Trash2 size={18} />
-                </button>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="inline-flex size-8 items-center justify-center rounded-lg text-brand-ink-muted transition-colors duration-150 hover:bg-brand-surface-alt hover:text-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary"
+                    aria-label={`Ubah menu ${menu.nama}`}
+                  >
+                    <Edit2 size={15} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex size-8 items-center justify-center rounded-lg text-brand-ink-muted transition-colors duration-150 hover:bg-danger-soft hover:text-danger focus-visible:ring-2 focus-visible:ring-danger"
+                    aria-label={`Hapus menu ${menu.nama}`}
+                  >
+                    <Trash2 size={15} aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Modal Resep (Glassmorphism Modal) */}
+      {/* Modal Resep (BOM) */}
       {isRecipeModalOpen && selectedMenu && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#00232C]/40 backdrop-blur-sm">
-          <div className="bg-white/90 backdrop-blur-[24px] border border-white/60 w-full max-w-xl rounded-[24px] shadow-[0_20px_50px_rgba(0,35,44,0.15)] overflow-hidden flex flex-col max-h-[90vh]">
-            
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-overlay/50 backdrop-blur-xs p-4">
+          <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-brand-line bg-brand-surface shadow-md">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-[#00232C]/10">
+            <div className="flex items-center justify-between border-b border-brand-line px-5 py-4">
               <div>
-                <h3 className="text-xl font-bold">Resep: {selectedMenu.nama}</h3>
-                <p className="text-sm text-[#00232C]/60">Atur komposisi pemotongan stok otomatis.</p>
+                <h3 className="text-base font-bold text-brand-ink-dark">
+                  Resep: {selectedMenu.nama}
+                </h3>
+                <p className="text-xs text-brand-ink-muted">
+                  Tentukan pemotongan stok bahan baku otomatis saat menu ini terjual.
+                </p>
               </div>
-              <button 
+              <button
+                type="button"
                 onClick={() => setIsRecipeModalOpen(false)}
-                className="p-2 text-[#00232C]/50 hover:text-[#00232C] hover:bg-black/5 rounded-full transition-colors"
+                className="rounded-md p-1.5 text-brand-ink-muted hover:bg-brand-surface-alt hover:text-brand-ink-dark focus-visible:ring-2 focus-visible:ring-brand-primary"
+                aria-label="Tutup modal resep"
               >
-                <X size={20} />
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto">
-              
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-5">
               {/* Form Tambah Bahan */}
-              <form onSubmit={handleAddRecipe} className="flex items-end gap-3 mb-8 bg-[#FBFBF3] p-4 rounded-[14px]">
-                <div className="flex-1">
-                  <label className="block text-[14px] font-semibold mb-2">Bahan Baku</label>
-                  <select 
-                    required
-                    value={selectedIngredientId}
-                    onChange={(e) => setSelectedIngredientId(e.target.value)}
-                    className="w-full h-12 bg-white border border-[#00232C]/10 focus:border-[#0053FF] rounded-[12px] px-4 outline-none"
+              <form onSubmit={handleAddRecipe} className="mb-6 rounded-xl border border-brand-line bg-brand-surface-alt p-4">
+                <p className="mb-3 text-xs font-semibold text-brand-ink-dark">Tambah Komposisi Bahan</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_120px_auto]">
+                  <div>
+                    <label htmlFor="ingredientSelect" className="sr-only">
+                      Bahan Baku
+                    </label>
+                    <select
+                      id="ingredientSelect"
+                      required
+                      value={selectedIngredientId}
+                      onChange={(e) => setSelectedIngredientId(e.target.value)}
+                      className="h-10 w-full rounded-md border border-brand-line-strong bg-brand-surface px-3 text-xs text-brand-ink-dark outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                    >
+                      <option value="" disabled>Pilih bahan baku…</option>
+                      {ingredients.map((ing) => (
+                        <option key={ing.id} value={ing.id}>
+                          {ing.nama} ({ing.satuan})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="takaranInput" className="sr-only">
+                      Takaran
+                    </label>
+                    <Input
+                      id="takaranInput"
+                      type="number"
+                      step="0.01"
+                      required
+                      min="0.01"
+                      value={takaran}
+                      onChange={(e) => setTakaran(e.target.value)}
+                      placeholder="Takaran"
+                      className="h-10 text-xs tabular-nums"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={isSavingRecipe}
+                    className="h-10 text-xs font-semibold"
                   >
-                    <option value="" disabled>Pilih bahan...</option>
-                    {ingredients.map(ing => (
-                      <option key={ing.id} value={ing.id}>{ing.nama} ({ing.satuan})</option>
-                    ))}
-                  </select>
+                    {isSavingRecipe ? "Menyimpan…" : "Tambah"}
+                  </Button>
                 </div>
-                <div className="w-1/3">
-                  <label className="block text-[14px] font-semibold mb-2">Takaran</label>
-                  <input 
-                    type="number"
-                    step="0.01"
-                    required
-                    value={takaran}
-                    onChange={(e) => setTakaran(e.target.value)}
-                    placeholder="0"
-                    className="w-full h-12 bg-white border border-[#00232C]/10 focus:border-[#0053FF] rounded-[12px] px-4 outline-none"
-                  />
-                </div>
-                <button 
-                  type="submit"
-                  disabled={isSavingRecipe}
-                  className="h-12 px-6 bg-[#0053FF] text-white rounded-full font-medium hover:-translate-y-[1px] transition-transform disabled:opacity-50"
-                >
-                  Tambah
-                </button>
               </form>
 
-              {/* Daftar Komposisi */}
-              <h4 className="font-semibold mb-3">Komposisi Saat Ini</h4>
+              {/* Komposisi Resep Saat Ini */}
+              <div className="flex items-center gap-1.5 mb-3">
+                <Layers size={15} className="text-brand-primary" aria-hidden="true" />
+                <h4 className="text-xs font-semibold text-brand-ink-dark">
+                  Daftar Bahan Pemotong Stok
+                </h4>
+              </div>
+
               {menuRecipes.length === 0 ? (
-                <p className="text-sm text-[#00232C]/50 italic">Menu ini belum memiliki resep. Stok tidak akan terpotong saat terjual.</p>
+                <div className="rounded-lg border border-dashed border-brand-line p-4 text-center text-xs text-brand-ink-muted">
+                  Menu ini belum memiliki resep. Penjualan kasir tidak akan memotong stok otomatis.
+                </div>
               ) : (
                 <div className="space-y-2">
                   {menuRecipes.map((recipe) => (
-                    <div key={recipe.id} className="flex justify-between items-center p-4 border border-[#00232C]/10 rounded-[14px]">
+                    <div
+                      key={recipe.id}
+                      className="flex items-center justify-between rounded-lg border border-brand-line bg-brand-surface p-3 shadow-xs"
+                    >
                       <div>
-                        <p className="font-medium">{recipe.ingredient.nama}</p>
-                        <p className="text-sm text-[#0053FF] font-semibold">
-                          Potong: {recipe.jumlah_takaran} {recipe.ingredient.satuan} / porsi
+                        <p className="text-xs font-semibold text-brand-ink-dark">
+                          {recipe.ingredient.nama}
+                        </p>
+                        <p className="text-[11px] text-brand-primary font-medium tabular-nums">
+                          Memotong {recipe.jumlah_takaran} {recipe.ingredient.satuan} per porsi
                         </p>
                       </div>
-                      <button 
+                      <button
+                        type="button"
                         onClick={() => handleRemoveRecipe(recipe.id)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        className="inline-flex size-8 items-center justify-center rounded-lg text-danger hover:bg-danger-soft transition-colors"
+                        aria-label={`Hapus ${recipe.ingredient.nama}`}
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={15} aria-hidden="true" />
                       </button>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-
           </div>
         </div>
       )}

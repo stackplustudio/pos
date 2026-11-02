@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "react-hot-toast";
+import { ArrowLeft } from "lucide-react";
 
 export default function CreateUserPage() {
   const router = useRouter();
@@ -13,7 +15,7 @@ export default function CreateUserPage() {
     name: "",
     email: "",
     password: "",
-    role: "USER"
+    role: "USER",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -26,87 +28,132 @@ export default function CreateUserPage() {
 
     try {
       await api.post("/users", formData);
-      toast.success("Berhasil menambahkan user baru!");
-      router.push("/dashboard/users"); // Kembali ke tabel setelah sukses
-    } catch (error: any) {
-      toast.error("Gagal: " + (error.response?.data?.message || "Terjadi kesalahan"));
+      toast.success("Berhasil menambahkan pengguna baru!");
+      router.push("/dashboard/users");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error("Gagal: " + (err.response?.data?.message || "Terjadi kesalahan"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+    <div className="mx-auto max-w-2xl font-sans text-brand-ink">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-brand-ink-dark sm:text-3xl">
+            Tambah Pengguna Baru
+          </h1>
+          <p className="mt-1 text-sm text-brand-ink-muted">
+            Form pendaftaran akun sistem StackPlus Studio.
+          </p>
+        </div>
+        <Button
+          type="button"
+          onClick={() => router.back()}
+          variant="outline"
+          className="gap-1.5"
+        >
+          <ArrowLeft size={14} aria-hidden="true" />
+          <span>Batal</span>
+        </Button>
+      </div>
+
+      <div className="rounded-xl border border-brand-line bg-brand-surface p-6 shadow-xs">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <h1 className="text-3xl font-bold text-zinc-900">Tambah User</h1>
-            <p className="text-zinc-500">Standar Form Input Core Engine</p>
+            <label
+              htmlFor="name"
+              className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+            >
+              Nama Lengkap
+            </label>
+            <Input
+              id="name"
+              type="text"
+              name="name"
+              required
+              value={formData.name}
+              onChange={handleChange}
+              className="h-10 text-xs"
+              placeholder="Masukkan nama lengkap"
+            />
           </div>
-          <Button onClick={() => router.back()} variant="outline">Batal</Button>
-        </div>
 
-        <div className="bg-white rounded-lg shadow border border-zinc-200 p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Nama Lengkap</label>
-              <input 
-                type="text" 
-                name="name"
-                required
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-zinc-300 rounded-md focus:ring-2 focus:ring-zinc-900 focus:outline-none"
-                placeholder="Masukkan nama"
-              />
-            </div>
+          <div>
+            <label
+              htmlFor="email"
+              className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+            >
+              Email
+            </label>
+            <Input
+              id="email"
+              type="email"
+              name="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              className="h-10 text-xs"
+              placeholder="nama@outlet.com"
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-              <input 
-                type="email" 
-                name="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-zinc-300 rounded-md focus:ring-2 focus:ring-zinc-900 focus:outline-none"
-                placeholder="email@stackplus.studio"
-              />
-            </div>
+          <div>
+            <label
+              htmlFor="password"
+              className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+            >
+              Password
+            </label>
+            <Input
+              id="password"
+              type="password"
+              name="password"
+              required
+              value={formData.password}
+              onChange={handleChange}
+              className="h-10 text-xs"
+              placeholder="Minimal 6 karakter"
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Password</label>
-              <input 
-                type="password" 
-                name="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-zinc-300 rounded-md focus:ring-2 focus:ring-zinc-900 focus:outline-none"
-                placeholder="Minimal 6 karakter"
-              />
-            </div>
+          <div>
+            <label
+              htmlFor="role"
+              className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+            >
+              Role Akses
+            </label>
+            <select
+              id="role"
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              className="h-10 w-full rounded-md border border-brand-line-strong bg-brand-surface px-3 text-xs text-brand-ink-dark outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+            >
+              <option value="USER">User Reguler</option>
+              <option value="ADMIN">Administrator</option>
+            </select>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Role Akses</label>
-              <select 
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-zinc-300 rounded-md focus:ring-2 focus:ring-zinc-900 focus:outline-none bg-white"
-              >
-                <option value="USER">User Reguler</option>
-                <option value="ADMIN">Administrator</option>
-              </select>
-            </div>
-
-            <div className="pt-4 border-t border-zinc-100 flex justify-end">
-              <Button type="submit" disabled={loading}>
-                {loading ? "Menyimpan..." : "Simpan Data"}
-              </Button>
-            </div>
-          </form>
-        </div>
+          <div className="flex justify-end gap-2.5 border-t border-brand-line pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "Menyimpan…" : "Simpan Pengguna"}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -4,16 +4,61 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/axios";
 import { toast } from "react-hot-toast";
-import { ShoppingCart, LogOut, CheckCircle2, LockKeyhole, Coins, Tag, Printer, X } from "lucide-react";
+import {
+  ShoppingCart,
+  ArrowLeft,
+  LockKeyhole,
+  Tag,
+  Printer,
+  X,
+  Plus,
+  Minus,
+  Trash2,
+  Clock,
+  Wallet,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
-interface MenuItem { id: string; nama: string; harga_jual: number; status: boolean; }
-interface CartItem extends MenuItem { qty: number; catatan: string; }
-interface Shift { id: string; modal_awal: number; kas_sistem: number; waktu_buka: string; }
-interface Discount { id: string; nama: string; tipe: string; nilai: number; }
+interface MenuItem {
+  id: string;
+  nama: string;
+  harga_jual: number;
+  status: boolean;
+}
+
+interface CartItem extends MenuItem {
+  qty: number;
+  catatan: string;
+}
+
+interface Shift {
+  id: string;
+  modal_awal: number;
+  kas_sistem: number;
+  waktu_buka: string;
+}
+
+interface Discount {
+  id: string;
+  nama: string;
+  tipe: string;
+  nilai: number;
+}
+
+interface OrderReceipt {
+  items: CartItem[];
+  subtotal: number;
+  diskonNama: string | null;
+  diskonNominal: number;
+  pajak: number;
+  total: number;
+  waktu: string;
+}
 
 export default function POSPage() {
   const router = useRouter();
-  
+
   // States
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -32,7 +77,7 @@ export default function POSPage() {
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
 
   // States Struk / Receipt
-  const [lastOrder, setLastOrder] = useState<any>(null);
+  const [lastOrder, setLastOrder] = useState<OrderReceipt | null>(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
   useEffect(() => {
@@ -43,78 +88,99 @@ export default function POSPage() {
 
   const checkActiveShift = async () => {
     try {
-      const res = await api.get('/shifts/active');
+      const res = await api.get("/shifts/active");
       setActiveShift(res.data);
-    } catch (error) { console.error("Gagal mengecek shift"); } 
-    finally { setIsLoadingShift(false); }
+    } catch {
+      console.error("Gagal mengecek shift");
+    } finally {
+      setIsLoadingShift(false);
+    }
   };
 
   const fetchMenus = async () => {
     try {
-      const response = await api.get('/menu-items');
+      const response = await api.get("/menu-items");
       setMenus(response.data.filter((m: MenuItem) => m.status));
-    } catch (error) { toast.error("Gagal load menu"); }
+    } catch {
+      toast.error("Gagal memuat katalog menu");
+    }
   };
 
   const fetchDiscounts = async () => {
     try {
-      const res = await api.get('/discounts?activeOnly=true');
+      const res = await api.get("/discounts?activeOnly=true");
       setDiscounts(res.data);
-    } catch (error) { console.error("Gagal load promo"); }
+    } catch {
+      console.error("Gagal memuat promo");
+    }
   };
 
   const handleOpenShift = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await api.post('/shifts/open', { modal_awal: parseInt(modalAwal) || 0 });
+      const res = await api.post("/shifts/open", {
+        modal_awal: parseInt(modalAwal, 10) || 0,
+      });
       setActiveShift(res.data);
-      toast.success("Shift berhasil dibuka.");
-    } catch (error: any) { toast.error("Gagal membuka shift"); }
+      toast.success("Shift kasir berhasil dibuka.");
+    } catch {
+      toast.error("Gagal membuka shift kasir");
+    }
   };
 
   const handleCloseShift = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeShift) return;
     try {
-      await api.patch(`/shifts/close/${activeShift.id}`, { kas_fisik: parseInt(kasFisik) || 0 });
-      toast.success("Shift ditutup.");
+      await api.patch(`/shifts/close/${activeShift.id}`, {
+        kas_fisik: parseInt(kasFisik, 10) || 0,
+      });
+      toast.success("Shift kasir berhasil ditutup.");
       setActiveShift(null);
       setIsCloseShiftModalOpen(false);
-      setModalAwal(""); setKasFisik("");
-    } catch (error) { toast.error("Gagal menutup shift"); }
+      setModalAwal("");
+      setKasFisik("");
+    } catch {
+      toast.error("Gagal menutup shift kasir");
+    }
   };
 
   const addToCart = (menu: MenuItem) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === menu.id);
-      if (existing) return prev.map((item) => item.id === menu.id ? { ...item, qty: item.qty + 1 } : item);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === menu.id ? { ...item, qty: item.qty + 1 } : item
+        );
+      }
       return [...prev, { ...menu, qty: 1, catatan: "" }];
     });
   };
 
   const updateQty = (id: string, delta: number) => {
-    setCart((prev) => prev.map((item) => {
-      if (item.id === id) {
-        const newQty = item.qty + delta;
-        return newQty > 0 ? { ...item, qty: newQty } : item;
-      }
-      return item;
-    }));
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          const newQty = item.qty + delta;
+          return newQty > 0 ? { ...item, qty: newQty } : item;
+        }
+        return item;
+      })
+    );
   };
 
-  // --- LOGIKA KALKULASI MATEMATIKA ---
-  const subtotal = cart.reduce((sum, item) => sum + (item.harga_jual * item.qty), 0);
-  
+  // Kalkulasi Pembayaran
+  const subtotal = cart.reduce((sum, item) => sum + item.harga_jual * item.qty, 0);
+
   let diskonNominal = 0;
   if (selectedDiscount) {
-    if (selectedDiscount.tipe === 'PERSENTASE') {
+    if (selectedDiscount.tipe === "PERSENTASE") {
       diskonNominal = Math.round(subtotal * (selectedDiscount.nilai / 100));
     } else {
       diskonNominal = selectedDiscount.nilai;
     }
   }
 
-  // Mencegah subtotal minus
   const subtotalSetelahDiskon = Math.max(0, subtotal - diskonNominal);
   const pajak = Math.round(subtotalSetelahDiskon * 0.11);
   const total = subtotalSetelahDiskon + pajak;
@@ -123,17 +189,21 @@ export default function POSPage() {
     if (cart.length === 0) return;
     setIsProcessing(true);
     try {
-      await api.post('/orders', {
+      await api.post("/orders", {
         tipe: "TAKEAWAY",
         metode_bayar: "TUNAI",
         discountId: selectedDiscount?.id,
         diskon_nominal: diskonNominal,
-        items: cart.map(item => ({ menuItemId: item.id, qty: item.qty, harga: item.harga_jual, catatan: item.catatan }))
+        items: cart.map((item) => ({
+          menuItemId: item.id,
+          qty: item.qty,
+          harga: item.harga_jual,
+          catatan: item.catatan,
+        })),
       });
-      
-      toast.success("Transaksi Berhasil!");
-      
-      // Simpan data untuk dicetak di struk
+
+      toast.success("Transaksi berhasil dicatat!");
+
       setLastOrder({
         items: [...cart],
         subtotal,
@@ -141,146 +211,354 @@ export default function POSPage() {
         diskonNominal,
         pajak,
         total,
-        waktu: new Date().toLocaleString('id-ID')
+        waktu: new Intl.DateTimeFormat("id-ID", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }).format(new Date()),
       });
 
       setCart([]);
       setSelectedDiscount(null);
       checkActiveShift();
-      setIsReceiptModalOpen(true); // Buka modal cetak struk
-
-    } catch (error) {
+      setIsReceiptModalOpen(true);
+    } catch {
       toast.error("Transaksi gagal diproses.");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const formatRp = (num: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+  const formatRp = (num: number) =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(num);
 
   const handlePrint = () => {
     window.print();
   };
 
-  if (isLoadingShift) return <div className="h-screen flex items-center justify-center bg-[#FBFBF3] text-[#00232C] font-inter">Memuat Sistem...</div>;
+  if (isLoadingShift) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-brand-background font-sans text-sm text-brand-ink-muted">
+        Memuat sistem kasir…
+      </div>
+    );
+  }
 
+  // Layar Buka Shift Baru
   if (!activeShift) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#FBFBF3] font-inter text-[#00232C] p-4 relative print:hidden">
-        <div className="bg-white p-8 rounded-[24px] shadow-2xl max-w-md w-full text-center">
-          <LockKeyhole size={32} className="mx-auto mb-4 text-[#0053FF]" />
-          <h2 className="text-2xl font-bold mb-2">Buka Shift Kasir</h2>
-          <form onSubmit={handleOpenShift} className="space-y-4">
-            <input type="number" required value={modalAwal} onChange={(e) => setModalAwal(e.target.value)} className="w-full h-14 px-4 bg-[#FBFBF3] border-none rounded-[16px] text-lg outline-none" placeholder="Modal Awal (Rp)" />
-            <button type="submit" className="w-full h-14 bg-[#0053FF] text-white rounded-[16px] font-bold">Mulai Bertugas</button>
+      <div className="relative flex min-h-screen items-center justify-center bg-brand-background p-4 font-sans print:hidden">
+        <div className="w-full max-w-sm rounded-xl border border-brand-line bg-brand-surface p-6 text-center shadow-sm sm:p-8">
+          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-brand-primary-soft text-brand-primary">
+            <LockKeyhole size={24} aria-hidden="true" />
+          </div>
+          <h1 className="text-xl font-bold text-brand-ink-dark">Buka Shift Kasir</h1>
+          <p className="mt-1 text-xs text-brand-ink-muted leading-relaxed">
+            Masukkan jumlah modal kas laci awal untuk memulai shift operasional.
+          </p>
+
+          <form onSubmit={handleOpenShift} className="mt-6 space-y-4 text-left">
+            <div>
+              <label
+                htmlFor="modalAwal"
+                className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+              >
+                Modal Awal (Rp)
+              </label>
+              <Input
+                id="modalAwal"
+                type="number"
+                required
+                min="0"
+                value={modalAwal}
+                onChange={(e) => setModalAwal(e.target.value)}
+                placeholder="Contoh: 200000"
+                className="h-11 text-base tabular-nums"
+              />
+            </div>
+            <Button
+              type="submit"
+              className="h-11 w-full text-sm font-semibold"
+            >
+              Mulai Bertugas
+            </Button>
           </form>
+
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-brand-ink-muted hover:text-brand-primary transition-colors"
+          >
+            <ArrowLeft size={14} aria-hidden="true" />
+            <span>Kembali ke dashboard</span>
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-[#FBFBF3] font-inter overflow-hidden print:bg-white">
-      
-      {/* AREA KIRI: Menu & Header (Sembunyikan saat nge-print) */}
-      <div className="w-2/3 h-full flex flex-col border-r border-[#00232C]/10 print:hidden">
-        <div className="bg-white px-6 py-4 flex justify-between items-center shadow-sm z-10">
+    <div className="flex h-screen overflow-hidden bg-brand-background font-sans text-brand-ink print:bg-white">
+      {/* AREA KIRI: Katalog Menu & Navigasi Kasir */}
+      <div className="flex flex-1 flex-col overflow-hidden border-r border-brand-line print:hidden">
+        {/* Topbar Kasir */}
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-brand-line bg-brand-surface px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/dashboard')} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200"><LogOut size={16} /></button>
-            <h1 className="text-xl font-bold text-[#00232C]">POS Kasir</h1>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="text-right text-sm">
-              <p className="text-[#00232C]/50 font-semibold">Kas Sistem Saat Ini</p>
-              <p className="font-bold text-[#0053FF]">{formatRp(activeShift.kas_sistem)}</p>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="inline-flex size-9 items-center justify-center rounded-lg border border-brand-line bg-brand-surface text-brand-ink-dark transition-colors duration-150 hover:bg-brand-surface-alt focus-visible:ring-2 focus-visible:ring-brand-primary"
+              title="Kembali ke Dashboard"
+              aria-label="Kembali ke Dashboard"
+            >
+              <ArrowLeft size={18} aria-hidden="true" />
+            </button>
+            <div>
+              <h1 className="text-base font-bold text-brand-ink-dark leading-tight">Layar Kasir POS</h1>
+              <p className="text-[11px] text-brand-ink-muted">Pilih produk untuk menambah pesanan</p>
             </div>
-            <button onClick={() => setIsCloseShiftModalOpen(true)} className="px-4 py-2 bg-red-50 text-red-600 font-bold rounded-full">Tutup Shift</button>
           </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {menus.map((menu) => (
-              <div key={menu.id} onClick={() => addToCart(menu)} className="bg-white rounded-[16px] p-4 cursor-pointer hover:border-[#0053FF] border border-transparent shadow-sm flex flex-col justify-between h-[120px]">
-                <h3 className="font-bold text-sm leading-tight">{menu.nama}</h3>
-                <p className="text-[#0053FF] font-bold mt-auto">{formatRp(menu.harga_jual)}</p>
-              </div>
-            ))}
+          <div className="flex items-center gap-3 sm:gap-5">
+            <div className="hidden sm:flex items-center gap-2 rounded-lg bg-brand-primary-soft px-3 py-1.5 text-xs text-brand-primary">
+              <Wallet size={15} aria-hidden="true" />
+              <span>Kas Sistem:</span>
+              <strong className="font-semibold tabular-nums">{formatRp(activeShift.kas_sistem)}</strong>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsCloseShiftModalOpen(true)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-danger/30 bg-danger-soft px-3 text-xs font-semibold text-danger-dark transition-colors duration-150 hover:bg-danger/15 focus-visible:ring-2 focus-visible:ring-danger"
+            >
+              <Clock size={14} aria-hidden="true" />
+              <span>Tutup Shift</span>
+            </button>
           </div>
+        </header>
+
+        {/* Grid Item Menu */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          {menus.length === 0 ? (
+            <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-brand-line bg-brand-surface p-6 text-center text-xs text-brand-ink-muted">
+              Belum ada menu yang aktif. Tambahkan menu di katalog dashboard.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {menus.map((menu) => (
+                <button
+                  key={menu.id}
+                  type="button"
+                  onClick={() => addToCart(menu)}
+                  className="group flex h-28 flex-col justify-between rounded-xl border border-brand-line bg-brand-surface p-3.5 text-left shadow-xs transition-colors duration-150 hover:border-brand-primary hover:bg-brand-surface-alt focus-visible:ring-2 focus-visible:ring-brand-primary active:scale-[0.98]"
+                >
+                  <p className="text-sm font-semibold text-brand-ink-dark line-clamp-2 leading-tight">
+                    {menu.nama}
+                  </p>
+                  <div className="mt-auto flex items-baseline justify-between">
+                    <span className="text-xs font-bold text-brand-primary tabular-nums">
+                      {formatRp(menu.harga_jual)}
+                    </span>
+                    <span className="inline-flex size-6 items-center justify-center rounded-full bg-brand-primary-soft text-brand-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Plus size={14} aria-hidden="true" />
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* AREA KANAN: Keranjang (Sembunyikan saat nge-print) */}
-      <div className="w-1/3 h-full bg-white flex flex-col shadow-lg z-20 print:hidden">
-        <div className="p-6 border-b border-[#00232C]/10 flex justify-between items-center">
-          <h2 className="text-xl font-bold flex items-center gap-2"><ShoppingCart size={22} /> Pesanan Saat Ini</h2>
+      {/* AREA KANAN: Keranjang & Pembayaran */}
+      <aside className="flex h-full w-full max-w-[360px] sm:max-w-[400px] flex-col border-l border-brand-line bg-brand-surface shadow-xs print:hidden">
+        {/* Header Keranjang */}
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-brand-line px-5">
+          <div className="flex items-center gap-2">
+            <span className="flex size-7 items-center justify-center rounded-md bg-brand-primary-soft text-brand-primary">
+              <ShoppingCart size={16} aria-hidden="true" />
+            </span>
+            <h2 className="text-sm font-bold text-brand-ink-dark">Pesanan Aktif</h2>
+          </div>
+          {cart.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setCart([])}
+              className="text-xs font-medium text-danger hover:underline"
+            >
+              Kosongkan
+            </button>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {cart.map((item) => (
-            <div key={item.id} className="p-3 bg-[#FBFBF3] rounded-[14px]">
-              <div className="flex justify-between items-start">
-                <span className="font-semibold text-sm">{item.nama}</span>
-                <span className="font-bold text-[#0053FF]">{formatRp(item.harga_jual * item.qty)}</span>
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <button onClick={() => setCart(cart.filter(c => c.id !== item.id))} className="text-xs text-red-500">Hapus</button>
-                <div className="flex items-center gap-2 bg-white rounded-full px-1 py-1">
-                  <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 rounded-full bg-gray-100">-</button>
-                  <span className="font-bold w-4 text-center text-sm">{item.qty}</span>
-                  <button onClick={() => updateQty(item.id, 1)} className="w-6 h-6 rounded-full bg-[#0053FF] text-white">+</button>
+        {/* Daftar Item Keranjang */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+          {cart.length === 0 ? (
+            <div className="flex h-48 flex-col items-center justify-center text-center text-xs text-brand-ink-muted">
+              <ShoppingCart size={32} className="mb-2 text-brand-line-strong" aria-hidden="true" />
+              <span>Keranjang masih kosong</span>
+              <span className="text-[11px] text-brand-ink-muted/80">Klik menu di sebelah kiri untuk memesan</span>
+            </div>
+          ) : (
+            cart.map((item) => (
+              <div
+                key={item.id}
+                className="flex flex-col rounded-lg border border-brand-line bg-brand-background p-3 shadow-xs"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xs font-semibold text-brand-ink-dark line-clamp-1">
+                    {item.nama}
+                  </span>
+                  <span className="text-xs font-bold text-brand-ink-dark tabular-nums shrink-0">
+                    {formatRp(item.harga_jual * item.qty)}
+                  </span>
+                </div>
+
+                <div className="mt-2.5 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setCart(cart.filter((c) => c.id !== item.id))}
+                    className="inline-flex items-center gap-1 text-[11px] text-danger hover:underline"
+                    aria-label={`Hapus ${item.nama}`}
+                  >
+                    <Trash2 size={13} aria-hidden="true" />
+                    <span>Hapus</span>
+                  </button>
+
+                  <div className="flex items-center gap-1.5 rounded-md border border-brand-line bg-brand-surface p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => updateQty(item.id, -1)}
+                      className="flex size-6 items-center justify-center rounded text-brand-ink-dark hover:bg-brand-surface-alt focus-visible:ring-1 focus-visible:ring-brand-primary"
+                      aria-label="Kurangi kuantitas"
+                    >
+                      <Minus size={12} aria-hidden="true" />
+                    </button>
+                    <span className="w-5 text-center text-xs font-bold tabular-nums">
+                      {item.qty}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateQty(item.id, 1)}
+                      className="flex size-6 items-center justify-center rounded bg-brand-primary text-white hover:bg-brand-primary-dark focus-visible:ring-1 focus-visible:ring-brand-primary"
+                      aria-label="Tambah kuantitas"
+                    >
+                      <Plus size={12} aria-hidden="true" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
-        <div className="p-6 border-t border-[#00232C]/10 bg-white">
-          
-          {/* Tombol Pemilih Promo */}
-          <button 
+        {/* Ringkasan Subtotal, Pajak, dan Diskon */}
+        <div className="border-t border-brand-line bg-brand-surface p-4 sm:p-5">
+          {/* Pemilih Diskon */}
+          <button
+            type="button"
             onClick={() => setIsDiscountModalOpen(true)}
-            className="w-full flex items-center justify-between p-3 mb-4 rounded-[12px] border border-dashed border-[#0053FF]/50 bg-[#0053FF]/5 hover:bg-[#0053FF]/10 transition-colors"
+            className="mb-3 flex h-9 w-full items-center justify-between rounded-lg border border-dashed border-brand-primary/40 bg-brand-primary-soft px-3 text-xs font-medium text-brand-primary transition-colors duration-150 hover:bg-brand-primary/10"
           >
-            <div className="flex items-center gap-2 text-[#0053FF] font-semibold text-sm">
-              <Tag size={16} /> {selectedDiscount ? `Promo Aktif: ${selectedDiscount.nama}` : 'Gunakan Promo / Diskon'}
+            <div className="flex items-center gap-1.5 truncate">
+              <Tag size={14} aria-hidden="true" />
+              <span className="truncate">
+                {selectedDiscount ? `Promo: ${selectedDiscount.nama}` : "Pilih Diskon / Promo"}
+              </span>
             </div>
-            {selectedDiscount && <X size={16} className="text-red-500" onClick={(e) => { e.stopPropagation(); setSelectedDiscount(null); }} />}
+            {selectedDiscount && (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedDiscount(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.stopPropagation();
+                    setSelectedDiscount(null);
+                  }
+                }}
+                className="text-danger hover:text-danger-dark"
+                aria-label="Hapus diskon"
+              >
+                <X size={14} aria-hidden="true" />
+              </span>
+            )}
           </button>
 
-          <div className="space-y-2 mb-6">
-            <div className="flex justify-between text-sm"><span>Subtotal</span><span>{formatRp(subtotal)}</span></div>
+          <div className="space-y-1.5 text-xs text-brand-ink">
+            <div className="flex justify-between">
+              <span className="text-brand-ink-muted">Subtotal</span>
+              <span className="tabular-nums font-medium">{formatRp(subtotal)}</span>
+            </div>
             {diskonNominal > 0 && (
-              <div className="flex justify-between text-sm text-green-600 font-semibold"><span>Diskon</span><span>- {formatRp(diskonNominal)}</span></div>
+              <div className="flex justify-between text-success">
+                <span>Diskon</span>
+                <span className="tabular-nums font-semibold">- {formatRp(diskonNominal)}</span>
+              </div>
             )}
-            <div className="flex justify-between text-sm"><span>Pajak (11%)</span><span>{formatRp(pajak)}</span></div>
-            <div className="flex justify-between text-2xl font-black pt-2 border-t mt-2">
-              <span>Total</span><span className="text-[#0053FF]">{formatRp(total)}</span>
+            <div className="flex justify-between">
+              <span className="text-brand-ink-muted">Pajak PB1 (11%)</span>
+              <span className="tabular-nums font-medium">{formatRp(pajak)}</span>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between border-t border-brand-line pt-2">
+              <span className="text-sm font-bold text-brand-ink-dark">Total Tagihan</span>
+              <span className="text-lg font-bold text-brand-primary tabular-nums">
+                {formatRp(total)}
+              </span>
             </div>
           </div>
 
-          <button onClick={handleCheckout} disabled={cart.length === 0 || isProcessing} className="w-full h-14 bg-[#0053FF] text-white rounded-[16px] font-bold text-lg disabled:opacity-50">
-            {isProcessing ? "Memproses..." : "Bayar Tagihan"}
-          </button>
+          <Button
+            type="button"
+            onClick={handleCheckout}
+            disabled={cart.length === 0 || isProcessing}
+            className="mt-4 h-11 w-full text-sm font-semibold"
+          >
+            {isProcessing ? "Memproses Transaksi..." : `Bayar Tunai (${formatRp(total)})`}
+          </Button>
         </div>
-      </div>
+      </aside>
 
-      {/* MODAL PILIH PROMO (Hidden saat print) */}
+      {/* MODAL PILIH DISKON */}
       {isDiscountModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 print:hidden">
-          <div className="bg-white p-6 rounded-[24px] max-w-sm w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Pilih Promo Aktif</h2>
-              <button onClick={() => setIsDiscountModalOpen(false)}><X size={20} /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-overlay/50 backdrop-blur-xs p-4 print:hidden">
+          <div className="w-full max-w-sm rounded-xl border border-brand-line bg-brand-surface p-5 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-bold text-brand-ink-dark">Pilih Promo Aktif</h3>
+              <button
+                type="button"
+                onClick={() => setIsDiscountModalOpen(false)}
+                className="rounded-md p-1 text-brand-ink-muted hover:bg-brand-surface-alt hover:text-brand-ink-dark"
+                aria-label="Tutup promo"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2 max-h-60 overflow-y-auto">
               {discounts.length === 0 ? (
-                <p className="text-sm text-center text-gray-500 py-4">Tidak ada promo aktif.</p>
+                <p className="py-4 text-center text-xs text-brand-ink-muted">
+                  Tidak ada promo aktif saat ini.
+                </p>
               ) : (
-                discounts.map(d => (
-                  <button key={d.id} onClick={() => { setSelectedDiscount(d); setIsDiscountModalOpen(false); }} className="w-full text-left p-4 rounded-[12px] border hover:border-[#0053FF] hover:bg-[#0053FF]/5 transition-all">
-                    <p className="font-bold text-[#00232C]">{d.nama}</p>
-                    <p className="text-sm text-[#0053FF] font-semibold">{d.tipe === 'PERSENTASE' ? `${d.nilai}% OFF` : `Potongan ${formatRp(d.nilai)}`}</p>
+                discounts.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDiscount(d);
+                      setIsDiscountModalOpen(false);
+                    }}
+                    className="flex w-full flex-col rounded-lg border border-brand-line p-3 text-left transition-colors hover:border-brand-primary hover:bg-brand-primary-soft focus-visible:ring-2 focus-visible:ring-brand-primary"
+                  >
+                    <p className="text-xs font-semibold text-brand-ink-dark">{d.nama}</p>
+                    <p className="mt-0.5 text-xs font-bold text-brand-primary">
+                      {d.tipe === "PERSENTASE" ? `${d.nilai}% OFF` : `Potongan ${formatRp(d.nilai)}`}
+                    </p>
                   </button>
                 ))
               )}
@@ -289,61 +567,124 @@ export default function POSPage() {
         </div>
       )}
 
-      {/* MODAL CETAK STRUK (Ditampilkan khusus saat transaksi sukses, dan ini yang akan dicetak) */}
+      {/* MODAL CETAK STRUK THERMAL */}
       {isReceiptModalOpen && lastOrder && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 print:p-0 print:bg-white">
-          <div className="bg-white p-8 rounded-[24px] max-w-sm w-full print:rounded-none print:shadow-none print:p-0">
-            
-            {/* AREA KHUSUS STRUK PRINTER THERMAL */}
-            <div className="text-center text-[#00232C] font-mono text-sm mb-6 print:mb-0">
-              <h2 className="text-xl font-black uppercase mb-1">NusaKasir</h2>
-              <p className="text-xs mb-4">Tanggal: {lastOrder.waktu}</p>
-              <div className="border-t border-dashed border-gray-400 my-4"></div>
-              
-              <div className="space-y-2 text-left">
-                {lastOrder.items.map((item: any, idx: number) => (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-overlay/60 backdrop-blur-xs p-4 print:p-0 print:bg-white">
+          <div className="w-full max-w-sm rounded-xl border border-brand-line bg-white p-6 shadow-md print:rounded-none print:border-none print:shadow-none print:p-0">
+            {/* Template Struk Thermal */}
+            <div className="mb-6 text-center font-mono text-xs text-brand-ink-dark print:mb-0">
+              <h2 className="text-base font-bold">NusaKasir</h2>
+              <p className="text-[11px] text-gray-500">Struk Transaksi Penjualan</p>
+              <p className="mt-1 text-[11px] text-gray-500">{lastOrder.waktu}</p>
+              <div className="my-3 border-t border-dashed border-gray-300" />
+
+              <div className="space-y-1.5 text-left">
+                {lastOrder.items.map((item, idx) => (
                   <div key={idx} className="flex justify-between text-xs">
-                    <span>{item.qty}x {item.nama}</span>
-                    <span>{formatRp(item.harga_jual * item.qty)}</span>
+                    <span className="truncate pr-2">
+                      {item.qty}x {item.nama}
+                    </span>
+                    <span className="shrink-0 tabular-nums">
+                      {formatRp(item.harga_jual * item.qty)}
+                    </span>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t border-dashed border-gray-400 my-4"></div>
-              <div className="space-y-1 text-xs text-left font-semibold">
-                <div className="flex justify-between"><span>Subtotal</span><span>{formatRp(lastOrder.subtotal)}</span></div>
+              <div className="my-3 border-t border-dashed border-gray-300" />
+              <div className="space-y-1 text-left text-xs font-medium">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span className="tabular-nums">{formatRp(lastOrder.subtotal)}</span>
+                </div>
                 {lastOrder.diskonNominal > 0 && (
-                  <div className="flex justify-between text-gray-600"><span>Diskon ({lastOrder.diskonNama})</span><span>-{formatRp(lastOrder.diskonNominal)}</span></div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Diskon ({lastOrder.diskonNama})</span>
+                    <span className="tabular-nums">-{formatRp(lastOrder.diskonNominal)}</span>
+                  </div>
                 )}
-                <div className="flex justify-between"><span>Pajak (11%)</span><span>{formatRp(lastOrder.pajak)}</span></div>
-                <div className="flex justify-between text-sm font-black pt-2 mt-2 border-t"><span>TOTAL</span><span>{formatRp(lastOrder.total)}</span></div>
+                <div className="flex justify-between">
+                  <span>PB1 (11%)</span>
+                  <span className="tabular-nums">{formatRp(lastOrder.pajak)}</span>
+                </div>
+                <div className="mt-2 flex justify-between border-t border-gray-300 pt-1.5 text-sm font-bold">
+                  <span>TOTAL</span>
+                  <span className="tabular-nums">{formatRp(lastOrder.total)}</span>
+                </div>
               </div>
-              
-              <div className="border-t border-dashed border-gray-400 my-4"></div>
-              <p className="text-xs font-bold">TERIMA KASIH</p>
+
+              <div className="my-3 border-t border-dashed border-gray-300" />
+              <p className="text-[11px] font-semibold">Terima Kasih Atas Kunjungan Anda</p>
             </div>
 
-            {/* TOMBOL AKSI (Sembunyi saat dicetak) */}
-            <div className="flex gap-3 print:hidden">
-              <button onClick={() => setIsReceiptModalOpen(false)} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-[12px]">Tutup</button>
-              <button onClick={handlePrint} className="flex-1 py-3 bg-[#0053FF] text-white font-bold rounded-[12px] flex justify-center items-center gap-2">
-                <Printer size={18} /> Cetak
-              </button>
+            {/* Aksi Modal */}
+            <div className="flex gap-2.5 print:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsReceiptModalOpen(false)}
+                className="flex-1"
+              >
+                Tutup
+              </Button>
+              <Button
+                type="button"
+                onClick={handlePrint}
+                className="flex-1 gap-2"
+              >
+                <Printer size={16} aria-hidden="true" />
+                <span>Cetak Struk</span>
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Close Shift (Hidden saat print) */}
+      {/* MODAL TUTUP SHIFT */}
       {isCloseShiftModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 print:hidden">
-          <div className="bg-white p-6 rounded-[24px] max-w-sm w-full">
-            <h2 className="text-xl font-bold mb-4">Akhiri Shift</h2>
-            <form onSubmit={handleCloseShift} className="space-y-4">
-              <input type="number" required value={kasFisik} onChange={(e) => setKasFisik(e.target.value)} className="w-full h-14 px-4 border rounded-[12px]" placeholder="Total Uang Fisik Laci" />
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setIsCloseShiftModalOpen(false)} className="flex-1 py-3 bg-gray-100 rounded-[12px] font-bold">Batal</button>
-                <button type="submit" className="flex-1 py-3 bg-red-600 text-white rounded-[12px] font-bold">Tutup Shift</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-overlay/50 backdrop-blur-xs p-4 print:hidden">
+          <div className="w-full max-w-sm rounded-xl border border-brand-line bg-brand-surface p-5 shadow-lg sm:p-6">
+            <h3 className="text-base font-bold text-brand-ink-dark">Tutup Shift Kasir</h3>
+            <p className="mt-1 text-xs text-brand-ink-muted leading-relaxed">
+              Hitung uang fisik di laci kasir untuk rekonsiliasi dengan kas sistem.
+            </p>
+
+            <form onSubmit={handleCloseShift} className="mt-4 space-y-4">
+              <div>
+                <label
+                  htmlFor="kasFisik"
+                  className="mb-1.5 block text-xs font-semibold text-brand-ink-dark"
+                >
+                  Total Uang Fisik Laci (Rp)
+                </label>
+                <Input
+                  id="kasFisik"
+                  type="number"
+                  required
+                  min="0"
+                  value={kasFisik}
+                  onChange={(e) => setKasFisik(e.target.value)}
+                  placeholder="Jumlah uang kas di laci"
+                  className="h-10 text-sm tabular-nums"
+                />
+              </div>
+
+              <div className="flex gap-2.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCloseShiftModalOpen(false)}
+                  className="flex-1"
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  Tutup Shift
+                </Button>
               </div>
             </form>
           </div>

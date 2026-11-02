@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2 } from "lucide-react";
-// Catatan: Pastikan Anda sudah punya konfigurasi axios di lib/axios
-// import axios from "@/lib/axios"; 
+import { Plus, Edit2, Trash2, FolderTree } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Category {
   id: string;
@@ -14,60 +13,91 @@ export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Simulasi fetch data (Nanti ganti dengan axios asli yang sudah bawa Bearer Token)
   useEffect(() => {
-    // axios.get('/categories').then((res) => setCategories(res.data));
+    // Simulasi data kategori produk
     setCategories([
-      { id: "1", nama_kategori: "Kopi" },
-      { id: "2", nama_kategori: "Snack" },
+      { id: "1", nama_kategori: "Kopi & Espresso" },
+      { id: "2", nama_kategori: "Non-Kopi & Teh" },
+      { id: "3", nama_kategori: "Makanan Utama" },
+      { id: "4", nama_kategori: "Snack & Camilan" },
     ]);
     setIsLoading(false);
   }, []);
 
   return (
-    <div className="max-w-[1280px] mx-auto p-6 md:p-8 font-inter text-[#00232C]">
-      {/* Page Intro / Hero */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div className="mx-auto max-w-6xl font-sans text-brand-ink">
+      {/* Header Halaman */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[40px] font-bold leading-tight">Kategori Menu</h1>
-          <p className="text-[#00232C]/70 mt-1">Kelola kelompok menu untuk memudahkan kasir.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-brand-ink-dark sm:text-3xl">
+            Kategori Menu
+          </h1>
+          <p className="mt-1 text-sm text-brand-ink-muted">
+            Kelola pengelompokan produk untuk memudahkan navigasi pada layar kasir.
+          </p>
         </div>
-        
-        {/* Primary Button (Pill radius 9999px, Primary Blue, hover translateY) */}
-        <button className="flex items-center gap-2 bg-[#0053FF] text-white px-6 py-3 rounded-full font-medium shadow-[0_4px_12px_rgba(0,83,255,0.25)] hover:-translate-y-[1px] transition-all duration-200">
-          <Plus size={18} />
-          Tambah Kategori
-        </button>
+
+        <Button
+          type="button"
+          className="gap-2 self-start sm:self-auto"
+        >
+          <Plus size={16} aria-hidden="true" />
+          <span>Tambah Kategori</span>
+        </Button>
       </div>
 
-      {/* GlassCard Container untuk Table */}
-      <div className="bg-white/60 backdrop-blur-[20px] border border-white/55 shadow-[0_10px_30px_rgba(0,35,44,0.08)] rounded-[20px] overflow-hidden">
-        <div className="p-6">
-          {isLoading ? (
-            <p className="text-center py-10 text-[#00232C]/50">Memuat data...</p>
-          ) : (
-            <div className="w-full">
-              {categories.map((cat) => (
-                <div 
-                  key={cat.id} 
-                  className="flex items-center justify-between py-4 border-b border-[#00232C]/10 last:border-0"
-                >
-                  <span className="text-[16px] font-medium">{cat.nama_kategori}</span>
-                  
-                  <div className="flex items-center gap-2">
-                    {/* Ghost Buttons */}
-                    <button className="p-2 text-[#0053FF] hover:bg-[#0053FF]/10 rounded-full transition-colors">
-                      <Edit2 size={16} />
-                    </button>
-                    <button className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+      {/* Tabel Kategori */}
+      <div className="overflow-hidden rounded-xl border border-brand-line bg-brand-surface shadow-xs">
+        {isLoading ? (
+          <div className="flex h-48 items-center justify-center text-xs text-brand-ink-muted">
+            Memuat data kategori…
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="flex h-48 flex-col items-center justify-center p-6 text-center text-xs text-brand-ink-muted">
+            <FolderTree size={32} className="mb-2 text-brand-line-strong" aria-hidden="true" />
+            <p className="font-semibold text-brand-ink-dark">Belum ada kategori</p>
+            <p className="mt-1 text-brand-ink-muted">Tambahkan kategori pertama untuk mengelompokkan menu.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-brand-line">
+            <div className="flex items-center justify-between bg-brand-surface-alt px-5 py-3 text-xs font-semibold text-brand-ink-dark">
+              <span>Nama Kategori</span>
+              <span>Aksi</span>
             </div>
-          )}
-        </div>
+            {categories.map((cat) => (
+              <div
+                key={cat.id}
+                className="flex items-center justify-between px-5 py-3.5 transition-colors duration-150 hover:bg-brand-surface-alt/50"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex size-8 items-center justify-center rounded-lg bg-brand-primary-soft text-brand-primary">
+                    <FolderTree size={16} aria-hidden="true" />
+                  </span>
+                  <span className="text-sm font-medium text-brand-ink-dark">
+                    {cat.nama_kategori}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="inline-flex size-8 items-center justify-center rounded-lg text-brand-ink-muted transition-colors duration-150 hover:bg-brand-surface-alt hover:text-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary"
+                    aria-label={`Ubah kategori ${cat.nama_kategori}`}
+                  >
+                    <Edit2 size={15} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex size-8 items-center justify-center rounded-lg text-brand-ink-muted transition-colors duration-150 hover:bg-danger-soft hover:text-danger focus-visible:ring-2 focus-visible:ring-danger"
+                    aria-label={`Hapus kategori ${cat.nama_kategori}`}
+                  >
+                    <Trash2 size={15} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
