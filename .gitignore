@@ -1,21 +1,22 @@
-$ignoreContent = @"
 # Dependencies
-node_modules
+node_modules/
 .pnp
 .pnp.*
 
 # Environment
 .env
 .env.*
+.env.local
 !.env.example
+!.env.*.example
 
 # Builds & Cache
-.turbo
-dist
-.next
-out
-build
-.vercel
+.turbo/
+dist/
+.next/
+out/
+build/
+.vercel/
 
 # Database
 /generated/prisma
@@ -23,20 +24,17 @@ build
 *.sqlite
 
 # Logs
-coverage
+coverage/
 *.log
 .pnpm-debug.log*
 
-# Misc
+# System & Misc
 .DS_Store
 *.pem
 *.tsbuildinfo
 next-env.d.ts
-"@
 
-# Docs
-/docs
-/.codebase-memory
-/.snapshots
-/.hallmark
-Set-Content -Path ".gitignore" -Value $ignoreContent -Force
+# Tooling metadata
+.codebase-memory/
+.snapshots/
+.hallmark/

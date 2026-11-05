@@ -92,7 +92,7 @@ export class OrdersService {
         where: { tenantId, kasirId, waktu_tutup: null }
       });
 
-      if (activeShift) {
+      if (activeShift && data.metode_bayar === 'TUNAI') {
         await tx.shift.update({
           where: { id: activeShift.id },
           data: { kas_sistem: { increment: total } } // Kas sistem bertambah sesuai total belanja
