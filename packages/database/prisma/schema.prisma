@@ -44,6 +44,8 @@ model Tenant {
   id               String   @id @default(cuid())
   nama_bisnis      String
   alamat           String?
+  no_hp            String?
+  pajak_persen     Int      @default(11)
   status_langganan String   @default("ACTIVE") // ACTIVE, SUSPENDED, TRIAL
   paket_id         String?
   

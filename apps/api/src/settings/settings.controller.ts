@@ -10,7 +10,7 @@ import { Role } from '@prisma/client';
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Roles(Role.OWNER, Role.MANAGER, Role.KASIR)
   @Get()
   getProfile(@Request() req: any) {
     return this.settingsService.getTenantProfile(req.user.tenantId);
@@ -18,7 +18,16 @@ export class SettingsController {
 
   @Roles(Role.OWNER, Role.MANAGER)
   @Patch()
-  updateProfile(@Request() req: any, @Body() body: { nama_bisnis?: string; alamat?: string }) {
+  updateProfile(
+    @Request() req: any,
+    @Body()
+    body: {
+      nama_bisnis?: string;
+      alamat?: string;
+      no_hp?: string;
+      pajak_persen?: number;
+    },
+  ) {
     return this.settingsService.updateTenantProfile(req.user.tenantId, body);
   }
 }

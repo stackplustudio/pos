@@ -24,9 +24,37 @@ import {
   Ban,
   CheckCircle2,
   AlertTriangle,
+  WifiOff,
+  RefreshCw,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
+interface TenantInfo {
+  nama_bisnis: string;
+  alamat?: string | null;
+  no_hp?: string | null;
+  pajak_persen: number;
+}
+
+interface OfflineOrder {
+  id: string;
+  createdAt: string;
+  payload: {
+    tipe: string;
+    tableId?: string;
+    metode_bayar: string;
+    discountId?: string;
+    diskon_nominal: number;
+    items: {
+      menuItemId: string;
+      qty: number;
+      harga: number;
+      catatan?: string;
+    }[];
+  };
+  receipt: OrderReceipt;
+}
 
 interface MenuItem {
   id: string;
@@ -129,12 +157,116 @@ export default function POSPage() {
   const [voidReason, setVoidReason] = useState("");
   const [isSubmittingVoid, setIsSubmittingVoid] = useState(false);
 
+  // States Pengaturan Tenant & Pajak Dinamis (Sprint 3)
+  const [tenantInfo, setTenantInfo] = useState<TenantInfo>({
+    nama_bisnis: "NusaKasir",
+    alamat: "",
+    no_hp: "",
+    pajak_persen: 11,
+  });
+
+  // States Mode Offline & Antrean Sinkronisasi (Sprint 3 - FR-POS-08)
+  const [isOffline, setIsOffline] = useState(false);
+  const [offlineQueue, setOfflineQueue] = useState<OfflineOrder[]>([]);
+  const [isSyncingOffline, setIsSyncingOffline] = useState(false);
+
   useEffect(() => {
     checkActiveShift();
     fetchMenus();
     fetchDiscounts();
     fetchTables();
+    fetchTenantSettings();
+
+    // Inisialisasi status koneksi & listener online/offline
+    setIsOffline(typeof navigator !== "undefined" ? !navigator.onLine : false);
+
+    const handleOnline = () => {
+      setIsOffline(false);
+      toast.success("Koneksi online pulih!");
+      syncOfflineOrders();
+    };
+
+    const handleOffline = () => {
+      setIsOffline(true);
+      toast.error("Koneksi terputus. Mode offline POS aktif.");
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    // Muat antrean pesanan offline lokal dari localStorage
+    try {
+      const savedQueue = localStorage.getItem("nusakasir_offline_orders");
+      if (savedQueue) {
+        setOfflineQueue(JSON.parse(savedQueue));
+      }
+    } catch (e) {
+      console.error("Gagal membaca cache transaksi offline", e);
+    }
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
+
+  const fetchTenantSettings = async () => {
+    try {
+      const res = await api.get("/settings");
+      if (res.data) {
+        setTenantInfo({
+          nama_bisnis: res.data.nama_bisnis || "NusaKasir",
+          alamat: res.data.alamat || "",
+          no_hp: res.data.no_hp || "",
+          pajak_persen: res.data.pajak_persen !== undefined ? res.data.pajak_persen : 11,
+        });
+      }
+    } catch {
+      console.error("Gagal memuat profil outlet");
+    }
+  };
+
+  const syncOfflineOrders = async () => {
+    let queue: OfflineOrder[] = [];
+    try {
+      const savedQueue = localStorage.getItem("nusakasir_offline_orders");
+      if (savedQueue) {
+        queue = JSON.parse(savedQueue);
+      }
+    } catch {
+      return;
+    }
+
+    if (queue.length === 0) return;
+
+    setIsSyncingOffline(true);
+    let successCount = 0;
+    const remainingQueue: OfflineOrder[] = [];
+
+    for (const pending of queue) {
+      try {
+        await api.post("/orders", pending.payload);
+        successCount++;
+      } catch (err) {
+        console.error("Gagal sinkron pesanan", err);
+        remainingQueue.push(pending);
+      }
+    }
+
+    setOfflineQueue(remainingQueue);
+    try {
+      localStorage.setItem("nusakasir_offline_orders", JSON.stringify(remainingQueue));
+    } catch (e) {
+      console.error(e);
+    }
+
+    setIsSyncingOffline(false);
+    if (successCount > 0) {
+      toast.success(`${successCount} pesanan offline berhasil disinkronkan ke server!`);
+      checkActiveShift();
+      fetchTables();
+    }
+  };
 
   const checkActiveShift = async () => {
     try {
@@ -267,8 +399,9 @@ export default function POSPage() {
     }
   }
 
+  const taxRate = (tenantInfo.pajak_persen ?? 11) / 100;
   const subtotalSetelahDiskon = Math.max(0, subtotal - diskonNominal);
-  const pajak = Math.round(subtotalSetelahDiskon * 0.11);
+  const pajak = Math.round(subtotalSetelahDiskon * taxRate);
   const total = subtotalSetelahDiskon + pajak;
 
   // Kalkulasi Uang Diterima & Kembalian
@@ -288,52 +421,104 @@ export default function POSPage() {
       return;
     }
 
-    setIsProcessing(true);
-    try {
-      await api.post("/orders", {
-        tipe: orderType,
-        tableId: orderType === "DINE_IN" ? selectedTableId : undefined,
-        metode_bayar: metodeBayar,
-        discountId: selectedDiscount?.id,
-        diskon_nominal: diskonNominal,
-        items: cart.map((item) => ({
-          menuItemId: item.id,
-          qty: item.qty,
-          harga: item.harga_jual,
-          catatan: item.catatan,
-        })),
-      });
+    const payload = {
+      tipe: orderType,
+      tableId: orderType === "DINE_IN" ? selectedTableId : undefined,
+      metode_bayar: metodeBayar,
+      discountId: selectedDiscount?.id,
+      diskon_nominal: diskonNominal,
+      items: cart.map((item) => ({
+        menuItemId: item.id,
+        qty: item.qty,
+        harga: item.harga_jual,
+        catatan: item.catatan,
+      })),
+    };
 
+    const selectedTable = tables.find((t) => t.id === selectedTableId);
+    const receiptData: OrderReceipt = {
+      items: [...cart],
+      subtotal,
+      diskonNama: selectedDiscount?.nama || null,
+      diskonNominal,
+      pajak,
+      total,
+      waktu: new Intl.DateTimeFormat("id-ID", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(new Date()),
+      tipe: orderType === "DINE_IN" ? "Dine-In" : "Takeaway",
+      nomorMeja: orderType === "DINE_IN" ? selectedTable?.nomor_meja || null : null,
+      metodeBayar,
+      uangDiterima: metodeBayar === "TUNAI" ? nominalUangDiterima : total,
+      kembalian: metodeBayar === "TUNAI" ? kembalian : 0,
+    };
+
+    setIsProcessing(true);
+
+    // Jika sedang offline, langsung simpan secara lokal dan cetak struk (FR-POS-08)
+    if (isOffline) {
+      const offlineItem: OfflineOrder = {
+        id: `OFFLINE-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        payload,
+        receipt: receiptData,
+      };
+      const updatedQueue = [...offlineQueue, offlineItem];
+      setOfflineQueue(updatedQueue);
+      try {
+        localStorage.setItem("nusakasir_offline_orders", JSON.stringify(updatedQueue));
+      } catch (err) {
+        console.error("Gagal simpan lokal", err);
+      }
+
+      toast.success("Transaksi disimpan offline! Struk siap dicetak.");
+      setLastOrder(receiptData);
+      setCart([]);
+      setSelectedDiscount(null);
+      setUangDiterima("");
+      setIsReceiptModalOpen(true);
+      setIsProcessing(false);
+      return;
+    }
+
+    try {
+      await api.post("/orders", payload);
       toast.success("Transaksi berhasil dicatat!");
 
-      const selectedTable = tables.find((t) => t.id === selectedTableId);
-
-      setLastOrder({
-        items: [...cart],
-        subtotal,
-        diskonNama: selectedDiscount?.nama || null,
-        diskonNominal,
-        pajak,
-        total,
-        waktu: new Intl.DateTimeFormat("id-ID", {
-          dateStyle: "medium",
-          timeStyle: "short",
-        }).format(new Date()),
-        tipe: orderType === "DINE_IN" ? "Dine-In" : "Takeaway",
-        nomorMeja: orderType === "DINE_IN" ? selectedTable?.nomor_meja || null : null,
-        metodeBayar,
-        uangDiterima: metodeBayar === "TUNAI" ? nominalUangDiterima : total,
-        kembalian: metodeBayar === "TUNAI" ? kembalian : 0,
-      });
-
+      setLastOrder(receiptData);
       setCart([]);
       setSelectedDiscount(null);
       setUangDiterima("");
       checkActiveShift();
       fetchTables();
       setIsReceiptModalOpen(true);
-    } catch {
-      toast.error("Transaksi gagal diproses.");
+    } catch (err: any) {
+      // Fallback: Jika koneksi mendadak putus saat kirim request
+      if (!navigator.onLine || !err?.response) {
+        const offlineItem: OfflineOrder = {
+          id: `OFFLINE-${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          payload,
+          receipt: receiptData,
+        };
+        const updatedQueue = [...offlineQueue, offlineItem];
+        setOfflineQueue(updatedQueue);
+        try {
+          localStorage.setItem("nusakasir_offline_orders", JSON.stringify(updatedQueue));
+        } catch (e) {
+          console.error(e);
+        }
+
+        toast.success("Koneksi terputus! Transaksi disimpan offline & siap dicetak.");
+        setLastOrder(receiptData);
+        setCart([]);
+        setSelectedDiscount(null);
+        setUangDiterima("");
+        setIsReceiptModalOpen(true);
+      } else {
+        toast.error("Transaksi gagal diproses.");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -495,6 +680,43 @@ export default function POSPage() {
             </Button>
           </div>
         </header>
+
+        {/* Banner Mode Offline & Antrean Sinkronisasi (Sprint 3 - FR-POS-08) */}
+        {(isOffline || offlineQueue.length > 0) && (
+          <div
+            className={`flex items-center justify-between border-b px-4 py-2.5 text-xs font-medium transition-colors ${
+              isOffline
+                ? "border-warning/30 bg-warning-soft text-warning"
+                : "border-brand-primary/20 bg-brand-primary-soft text-brand-primary"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <WifiOff size={16} className="shrink-0" aria-hidden="true" />
+              <span>
+                {isOffline
+                  ? "Mode Offline Aktif — Transaksi tersimpan lokal dan akan otomatis sinkron saat terhubung kembali."
+                  : `Tersambung online — ${offlineQueue.length} transaksi offline siap disinkronkan ke server.`}
+              </span>
+            </div>
+            {!isOffline && offlineQueue.length > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={isSyncingOffline}
+                onClick={syncOfflineOrders}
+                className="h-7 gap-1.5 text-xs font-semibold"
+              >
+                <RefreshCw
+                  size={12}
+                  className={isSyncingOffline ? "animate-spin" : ""}
+                  aria-hidden="true"
+                />
+                <span>{isSyncingOffline ? "Sinkronisasi…" : "Sinkronkan Sekarang"}</span>
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Katalog Menu Grid */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
@@ -731,7 +953,7 @@ export default function POSPage() {
               </div>
             )}
             <div className="flex justify-between text-brand-ink-muted">
-              <span>PB1 (11%)</span>
+              <span>PB1 / Pajak ({tenantInfo.pajak_persen}%)</span>
               <span className="tabular-nums">{formatRp(pajak)}</span>
             </div>
             <div className="flex justify-between border-t border-brand-line pt-2 text-sm font-bold text-brand-ink-dark">
@@ -856,7 +1078,13 @@ export default function POSPage() {
             className="h-11 w-full text-sm font-bold gap-2"
           >
             <Wallet size={16} aria-hidden="true" />
-            <span>{isProcessing ? "Memproses Transaksi…" : `Bayar ${formatRp(total)}`}</span>
+            <span>
+              {isProcessing
+                ? "Memproses Transaksi…"
+                : isOffline
+                ? `Simpan Offline (${formatRp(total)})`
+                : `Bayar ${formatRp(total)}`}
+            </span>
           </Button>
         </div>
       </div>
@@ -953,8 +1181,14 @@ export default function POSPage() {
           <div className="w-full max-w-sm rounded-xl border border-brand-line bg-white p-6 shadow-md print:rounded-none print:border-none print:shadow-none print:p-0">
             {/* Template Struk Thermal */}
             <div className="mb-6 text-center font-mono text-xs text-brand-ink-dark print:mb-0">
-              <h2 className="text-base font-bold">NusaKasir</h2>
-              <p className="text-[11px] text-gray-500">Struk Transaksi Penjualan</p>
+              <h2 className="text-base font-bold">{tenantInfo.nama_bisnis || "NusaKasir"}</h2>
+              {tenantInfo.alamat && (
+                <p className="text-[10px] text-gray-500 leading-tight mt-0.5">{tenantInfo.alamat}</p>
+              )}
+              {tenantInfo.no_hp && (
+                <p className="text-[10px] text-gray-500 mt-0.5">Telp/WA: {tenantInfo.no_hp}</p>
+              )}
+              <p className="text-[11px] text-gray-500 mt-1">Struk Transaksi Penjualan</p>
               <p className="mt-1 text-[11px] text-gray-500">{lastOrder.waktu}</p>
               <p className="mt-0.5 text-[11px] font-semibold text-gray-600">
                 {lastOrder.tipe} {lastOrder.nomorMeja ? `· Meja ${lastOrder.nomorMeja}` : ""}
@@ -987,7 +1221,7 @@ export default function POSPage() {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>PB1 (11%)</span>
+                  <span>PB1 / Pajak ({tenantInfo.pajak_persen}%)</span>
                   <span className="tabular-nums">{formatRp(lastOrder.pajak)}</span>
                 </div>
                 <div className="mt-2 flex justify-between border-t border-gray-300 pt-1.5 text-sm font-bold">

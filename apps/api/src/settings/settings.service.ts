@@ -8,20 +8,38 @@ export class SettingsService {
   async getTenantProfile(tenantId: string) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, nama_bisnis: true, alamat: true, status_langganan: true }
+      select: {
+        id: true,
+        nama_bisnis: true,
+        alamat: true,
+        no_hp: true,
+        pajak_persen: true,
+        status_langganan: true,
+      },
     });
     if (!tenant) throw new NotFoundException('Data bisnis tidak ditemukan');
     return tenant;
   }
 
-  async updateTenantProfile(tenantId: string, data: { nama_bisnis?: string; alamat?: string }) {
+  async updateTenantProfile(
+    tenantId: string,
+    data: { nama_bisnis?: string; alamat?: string; no_hp?: string; pajak_persen?: number },
+  ) {
     return this.prisma.tenant.update({
       where: { id: tenantId },
       data: {
-        nama_bisnis: data.nama_bisnis,
-        alamat: data.alamat
+        ...(data.nama_bisnis !== undefined && { nama_bisnis: data.nama_bisnis }),
+        ...(data.alamat !== undefined && { alamat: data.alamat }),
+        ...(data.no_hp !== undefined && { no_hp: data.no_hp }),
+        ...(data.pajak_persen !== undefined && { pajak_persen: Number(data.pajak_persen) }),
       },
-      select: { nama_bisnis: true, alamat: true }
+      select: {
+        id: true,
+        nama_bisnis: true,
+        alamat: true,
+        no_hp: true,
+        pajak_persen: true,
+      },
     });
   }
 }

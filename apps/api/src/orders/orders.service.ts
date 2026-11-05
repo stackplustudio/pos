@@ -21,7 +21,12 @@ export class OrdersService {
     
     // Pastikan tidak minus
     const finalSubtotal = subtotalSetelahDiskon > 0 ? subtotalSetelahDiskon : 0;
-    const pajak = Math.round(finalSubtotal * 0.11);
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { pajak_persen: true },
+    });
+    const taxRate = ((tenant?.pajak_persen ?? 11)) / 100;
+    const pajak = Math.round(finalSubtotal * taxRate);
     const total = finalSubtotal + pajak;
 
     return this.prisma.$transaction(async (tx) => {
