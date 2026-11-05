@@ -1,6 +1,6 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OrderType } from '@prisma/client';
+import { OrderType, MovementType } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
@@ -34,14 +34,13 @@ export class OrdersService {
           tableId: data.tableId,
           status: 'COMPLETED', 
           subtotal,
-          diskon, // 🔥 Data baru
-          discountId: data.discountId, // 🔥 Data baru
+          diskon,
+          discountId: data.discountId,
           pajak,
           total,
           metode_bayar: data.metode_bayar,
         }
       });
-      // ... (Sisa kode ke bawah sama seperti sebelumnya: potong stok, update meja, tambah kas_sistem)
 
       // 2. Loop setiap item pesanan & Potong Stok
       for (const item of data.items) {
@@ -87,7 +86,7 @@ export class OrdersService {
         });
       }
 
-      // 4. 🔥 PERBAIKAN: Tambahkan uang pemasukan ke laci Shift Kasir yang sedang aktif
+      // 4. Tambahkan uang pemasukan ke laci Shift Kasir yang sedang aktif jika pembayaran tunai
       const activeShift = await tx.shift.findFirst({
         where: { tenantId, kasirId, waktu_tutup: null }
       });
@@ -95,7 +94,7 @@ export class OrdersService {
       if (activeShift && data.metode_bayar === 'TUNAI') {
         await tx.shift.update({
           where: { id: activeShift.id },
-          data: { kas_sistem: { increment: total } } // Kas sistem bertambah sesuai total belanja
+          data: { kas_sistem: { increment: total } }
         });
       }
 
@@ -113,6 +112,90 @@ export class OrdersService {
         orderItems: { include: { menuItem: true } }
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // Fungsi Void / Batalkan Transaksi (FR-POS-09)
+  async voidOrder(tenantId: string, userId: string, orderId: string, alasan: string) {
+    if (!alasan || !alasan.trim()) {
+      throw new BadRequestException('Alasan pembatalan (void) pesanan wajib diisi.');
+    }
+
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, tenantId },
+      include: {
+        orderItems: {
+          include: {
+            menuItem: {
+              include: {
+                recipes: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Data transaksi pesanan tidak ditemukan.');
+    }
+
+    if (order.status === 'CANCELLED') {
+      throw new BadRequestException('Pesanan ini sudah pernah dibatalkan (void).');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Ubah status pesanan menjadi CANCELLED
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: { status: 'CANCELLED' },
+      });
+
+      // 2. Kembalikan stok bahan baku
+      for (const item of order.orderItems) {
+        for (const recipe of item.menuItem.recipes) {
+          const totalKembali = recipe.jumlah_takaran * item.qty;
+          await tx.ingredient.update({
+            where: { id: recipe.ingredientId },
+            data: { stok_saat_ini: { increment: totalKembali } },
+          });
+
+          await tx.stockMovement.create({
+            data: {
+              tenantId,
+              ingredientId: recipe.ingredientId,
+              tipe: 'IN' as MovementType,
+              jumlah: totalKembali,
+              referensi_id: order.id,
+              catatan: `Void Order #${order.id.slice(-6)}: ${alasan.trim()} (${item.qty}x ${item.menuItem.nama})`,
+            },
+          });
+        }
+      }
+
+      // 3. Jika pembayaran TUNAI, potong kas_sistem pada shift kasir aktif
+      if (order.metode_bayar === 'TUNAI') {
+        const activeShift = await tx.shift.findFirst({
+          where: { tenantId, kasirId: userId, waktu_tutup: null },
+        });
+
+        if (activeShift) {
+          await tx.shift.update({
+            where: { id: activeShift.id },
+            data: { kas_sistem: { decrement: order.total } },
+          });
+        }
+      }
+
+      // 4. Jika pesanan memiliki nomor meja, kembalikan meja menjadi KOSONG
+      if (order.tableId) {
+        await tx.table.update({
+          where: { id: order.tableId },
+          data: { status: 'KOSONG' },
+        });
+      }
+
+      return updatedOrder;
     });
   }
 }

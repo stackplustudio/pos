@@ -23,7 +23,8 @@ export class TablesController {
     return this.tablesService.findAll(req.user.tenantId);
   }
 
-  @Roles(Role.OWNER, Role.MANAGER)
+  // Kasir boleh update status meja (misal selesai makan / kosongkan meja)
+  @Roles(Role.OWNER, Role.MANAGER, Role.KASIR)
   @Patch(':id')
   update(@Request() req: any, @Param('id') id: string, @Body() body: { nomor_meja?: string; area?: string; status?: string }) {
     return this.tablesService.update(req.user.tenantId, id, body);
