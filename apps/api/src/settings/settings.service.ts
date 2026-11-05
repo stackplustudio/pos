@@ -14,6 +14,8 @@ export class SettingsService {
         alamat: true,
         no_hp: true,
         pajak_persen: true,
+        lebar_printer: true,
+        footer_struk: true,
         status_langganan: true,
       },
     });
@@ -23,7 +25,14 @@ export class SettingsService {
 
   async updateTenantProfile(
     tenantId: string,
-    data: { nama_bisnis?: string; alamat?: string; no_hp?: string; pajak_persen?: number },
+    data: {
+      nama_bisnis?: string;
+      alamat?: string;
+      no_hp?: string;
+      pajak_persen?: number;
+      lebar_printer?: number;
+      footer_struk?: string;
+    },
   ) {
     return this.prisma.tenant.update({
       where: { id: tenantId },
@@ -32,6 +41,8 @@ export class SettingsService {
         ...(data.alamat !== undefined && { alamat: data.alamat }),
         ...(data.no_hp !== undefined && { no_hp: data.no_hp }),
         ...(data.pajak_persen !== undefined && { pajak_persen: Number(data.pajak_persen) }),
+        ...(data.lebar_printer !== undefined && { lebar_printer: Number(data.lebar_printer) }),
+        ...(data.footer_struk !== undefined && { footer_struk: data.footer_struk }),
       },
       select: {
         id: true,
@@ -39,6 +50,8 @@ export class SettingsService {
         alamat: true,
         no_hp: true,
         pajak_persen: true,
+        lebar_printer: true,
+        footer_struk: true,
       },
     });
   }

@@ -13,7 +13,7 @@ export class AnalyticsService {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const orders = await this.prisma.order.findMany({
-      where: { tenantId, createdAt: { gte: today, lt: tomorrow }, status: 'COMPLETED' },
+      where: { tenantId, createdAt: { gte: today, lt: tomorrow }, status: { not: 'CANCELLED' } },
     });
 
     const transaksi = orders.length;
@@ -35,7 +35,7 @@ export class AnalyticsService {
     const orders = await this.prisma.order.findMany({
       where: {
         tenantId,
-        status: 'COMPLETED',
+        status: { not: 'CANCELLED' },
         createdAt: { gte: start, lte: end },
       },
       include: {

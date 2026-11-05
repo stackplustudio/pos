@@ -46,6 +46,8 @@ model Tenant {
   alamat           String?
   no_hp            String?
   pajak_persen     Int      @default(11)
+  lebar_printer    Int      @default(58)
+  footer_struk     String?
   status_langganan String   @default("ACTIVE") // ACTIVE, SUSPENDED, TRIAL
   paket_id         String?
   
@@ -230,6 +232,8 @@ model Order {
   pajak       Int         @default(0)
   total       Int         @default(0)
   metode_bayar String?    // TUNAI, QRIS
+  nama_pelanggan String?
+  no_hp_pelanggan String?
   
   diskon      Int         @default(0)
   discountId  String?

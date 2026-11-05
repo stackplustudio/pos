@@ -26,6 +26,8 @@ import {
   AlertTriangle,
   WifiOff,
   RefreshCw,
+  ChefHat,
+  User,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,8 @@ interface TenantInfo {
   alamat?: string | null;
   no_hp?: string | null;
   pajak_persen: number;
+  lebar_printer: number;
+  footer_struk?: string | null;
 }
 
 interface OfflineOrder {
@@ -46,6 +50,8 @@ interface OfflineOrder {
     metode_bayar: string;
     discountId?: string;
     diskon_nominal: number;
+    nama_pelanggan?: string;
+    no_hp_pelanggan?: string;
     items: {
       menuItemId: string;
       qty: number;
@@ -102,6 +108,10 @@ interface OrderReceipt {
   metodeBayar: string;
   uangDiterima: number;
   kembalian: number;
+  namaPelanggan?: string | null;
+  noHpPelanggan?: string | null;
+  footerStruk?: string | null;
+  lebarPrinter?: number;
 }
 
 interface TodayOrder {
@@ -157,13 +167,20 @@ export default function POSPage() {
   const [voidReason, setVoidReason] = useState("");
   const [isSubmittingVoid, setIsSubmittingVoid] = useState(false);
 
-  // States Pengaturan Tenant & Pajak Dinamis (Sprint 3)
+  // States Pengaturan Tenant, Pajak & Printer Dinamis (Sprint 3 & 4)
   const [tenantInfo, setTenantInfo] = useState<TenantInfo>({
     nama_bisnis: "NusaKasir",
     alamat: "",
     no_hp: "",
     pajak_persen: 11,
+    lebar_printer: 58,
+    footer_struk: "Terima kasih atas kunjungan Anda!",
   });
+
+  // States Pelanggan Sederhana (Sprint 4 - FR-CUST-01)
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [isCustomerExpanded, setIsCustomerExpanded] = useState(false);
 
   // States Mode Offline & Antrean Sinkronisasi (Sprint 3 - FR-POS-08)
   const [isOffline, setIsOffline] = useState(false);
@@ -219,6 +236,8 @@ export default function POSPage() {
           alamat: res.data.alamat || "",
           no_hp: res.data.no_hp || "",
           pajak_persen: res.data.pajak_persen !== undefined ? res.data.pajak_persen : 11,
+          lebar_printer: res.data.lebar_printer || 58,
+          footer_struk: res.data.footer_struk || "Terima kasih atas kunjungan Anda!",
         });
       }
     } catch {
@@ -427,6 +446,8 @@ export default function POSPage() {
       metode_bayar: metodeBayar,
       discountId: selectedDiscount?.id,
       diskon_nominal: diskonNominal,
+      nama_pelanggan: customerName.trim() || undefined,
+      no_hp_pelanggan: customerPhone.trim() || undefined,
       items: cart.map((item) => ({
         menuItemId: item.id,
         qty: item.qty,
@@ -452,6 +473,10 @@ export default function POSPage() {
       metodeBayar,
       uangDiterima: metodeBayar === "TUNAI" ? nominalUangDiterima : total,
       kembalian: metodeBayar === "TUNAI" ? kembalian : 0,
+      namaPelanggan: customerName.trim() || null,
+      noHpPelanggan: customerPhone.trim() || null,
+      footerStruk: tenantInfo.footer_struk || "Terima kasih atas kunjungan Anda!",
+      lebarPrinter: tenantInfo.lebar_printer || 58,
     };
 
     setIsProcessing(true);
@@ -476,6 +501,8 @@ export default function POSPage() {
       setLastOrder(receiptData);
       setCart([]);
       setSelectedDiscount(null);
+      setCustomerName("");
+      setCustomerPhone("");
       setUangDiterima("");
       setIsReceiptModalOpen(true);
       setIsProcessing(false);
@@ -489,6 +516,8 @@ export default function POSPage() {
       setLastOrder(receiptData);
       setCart([]);
       setSelectedDiscount(null);
+      setCustomerName("");
+      setCustomerPhone("");
       setUangDiterima("");
       checkActiveShift();
       fetchTables();
@@ -655,6 +684,19 @@ export default function POSPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Tombol Akses KDS Dapur (Sprint 4) */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => window.open("/dashboard/kds", "_blank")}
+              className="gap-1.5 text-xs font-medium"
+              title="Buka monitor Kitchen Display System (KDS) di tab baru"
+            >
+              <ChefHat size={14} className="text-brand-primary" aria-hidden="true" />
+              <span className="hidden sm:inline">Layar Dapur (KDS)</span>
+            </Button>
+
             {/* Tombol Riwayat Transaksi Hari Ini */}
             <Button
               type="button"
@@ -845,6 +887,52 @@ export default function POSPage() {
               )}
             </div>
           )}
+
+          {/* Input Data Pelanggan Sederhana (Sprint 4 - FR-CUST-01) */}
+          <div className="border-t border-brand-line/60 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsCustomerExpanded(!isCustomerExpanded)}
+              className="flex w-full items-center justify-between text-[11px] font-semibold text-brand-ink-muted hover:text-brand-ink-dark transition-colors"
+            >
+              <span className="flex items-center gap-1.5">
+                <User size={13} className="text-brand-primary" aria-hidden="true" />
+                <span>
+                  {customerName ? `Pelanggan: ${customerName}` : "Data Pelanggan (Opsional)"}
+                </span>
+              </span>
+              <span className="text-[10px] font-bold text-brand-primary">
+                {isCustomerExpanded ? "Tutup" : customerName ? "Ubah" : "+ Tambah"}
+              </span>
+            </button>
+
+            {isCustomerExpanded && (
+              <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-brand-line bg-brand-surface-alt/50 p-2">
+                <div>
+                  <label htmlFor="customerNameInput" className="sr-only">Nama Pelanggan</label>
+                  <Input
+                    id="customerNameInput"
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Nama Pelanggan"
+                    className="h-8 text-xs font-medium"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="customerPhoneInput" className="sr-only">No WhatsApp</label>
+                  <Input
+                    id="customerPhoneInput"
+                    type="text"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="No WA (0812...)"
+                    className="h-8 text-xs font-medium"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* List Item Keranjang */}
@@ -1175,10 +1263,14 @@ export default function POSPage() {
         </div>
       )}
 
-      {/* MODAL CETAK STRUK THERMAL (Sprint 2) */}
+      {/* MODAL CETAK STRUK THERMAL (Sprint 2 & Sprint 4) */}
       {isReceiptModalOpen && lastOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-overlay/60 backdrop-blur-xs p-4 print:p-0 print:bg-white">
-          <div className="w-full max-w-sm rounded-xl border border-brand-line bg-white p-6 shadow-md print:rounded-none print:border-none print:shadow-none print:p-0">
+          <div
+            className={`w-full mx-auto rounded-xl border border-brand-line bg-white p-5 shadow-md print:rounded-none print:border-none print:shadow-none print:p-0 ${
+              lastOrder.lebarPrinter === 80 ? "max-w-[340px]" : "max-w-[280px]"
+            }`}
+          >
             {/* Template Struk Thermal */}
             <div className="mb-6 text-center font-mono text-xs text-brand-ink-dark print:mb-0">
               <h2 className="text-base font-bold">{tenantInfo.nama_bisnis || "NusaKasir"}</h2>
@@ -1232,6 +1324,15 @@ export default function POSPage() {
                   <span>Metode Bayar</span>
                   <span>{lastOrder.metodeBayar}</span>
                 </div>
+                {lastOrder.namaPelanggan && (
+                  <div className="flex justify-between pt-1 text-[11px] text-gray-600">
+                    <span>Pelanggan</span>
+                    <span className="truncate max-w-[140px] font-medium">
+                      {lastOrder.namaPelanggan}
+                      {lastOrder.noHpPelanggan ? ` (${lastOrder.noHpPelanggan})` : ""}
+                    </span>
+                  </div>
+                )}
                 {lastOrder.metodeBayar === "TUNAI" && (
                   <>
                     <div className="flex justify-between text-[11px] text-gray-600">
@@ -1247,7 +1348,9 @@ export default function POSPage() {
               </div>
 
               <div className="my-3 border-t border-dashed border-gray-300" />
-              <p className="text-[11px] font-semibold">Terima Kasih Atas Kunjungan Anda</p>
+              <p className="text-[11px] font-semibold text-gray-700">
+                {lastOrder.footerStruk || tenantInfo.footer_struk || "Terima Kasih Atas Kunjungan Anda"}
+              </p>
             </div>
 
             {/* Aksi Modal */}

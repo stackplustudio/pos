@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   Store,
   X,
+  ChefHat,
 } from "lucide-react";
 import Cookies from "js-cookie";
 
@@ -75,6 +76,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     {
       title: "Operasional",
       items: [
+        { name: "Kitchen Display (KDS)", href: "/dashboard/kds", icon: ChefHat, roles: ["OWNER", "MANAGER", "KASIR"] },
         { name: "Manajemen Meja", href: "/dashboard/tables", icon: LayoutGrid, roles: ["OWNER", "MANAGER", "KASIR"] },
         { name: "Inventory", href: "/dashboard/inventory", icon: Package, roles: ["OWNER", "MANAGER"] },
         { name: "Supplier", href: "/dashboard/suppliers", icon: Truck, roles: ["OWNER", "MANAGER"] },

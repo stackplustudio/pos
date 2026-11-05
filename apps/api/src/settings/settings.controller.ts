@@ -26,6 +26,8 @@ export class SettingsController {
       alamat?: string;
       no_hp?: string;
       pajak_persen?: number;
+      lebar_printer?: number;
+      footer_struk?: string;
     },
   ) {
     return this.settingsService.updateTenantProfile(req.user.tenantId, body);

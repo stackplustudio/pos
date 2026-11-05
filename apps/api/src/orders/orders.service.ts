@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OrderType, MovementType } from '@prisma/client';
+import { OrderType, OrderStatus, MovementType } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
@@ -9,7 +9,17 @@ export class OrdersService {
   async createOrder(
     tenantId: string, 
     kasirId: string, 
-    data: { tipe: OrderType; tableId?: string; metode_bayar: string; discountId?: string; diskon_nominal?: number; items: any[] }
+    data: {
+      tipe: OrderType;
+      tableId?: string;
+      metode_bayar: string;
+      discountId?: string;
+      diskon_nominal?: number;
+      nama_pelanggan?: string;
+      no_hp_pelanggan?: string;
+      status?: OrderStatus;
+      items: any[];
+    }
   ) {
     if (!data.items || data.items.length === 0) {
       throw new BadRequestException('Keranjang belanja kosong.');
@@ -30,20 +40,22 @@ export class OrdersService {
     const total = finalSubtotal + pajak;
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Buat Header Pesanan (Tambahkan diskon dan discountId)
+      // 1. Buat Header Pesanan
       const order = await tx.order.create({
         data: {
           tenantId,
           kasirId,
           tipe: data.tipe,
           tableId: data.tableId,
-          status: 'COMPLETED', 
+          status: data.status || 'PROCESSING', 
           subtotal,
           diskon,
           discountId: data.discountId,
           pajak,
           total,
           metode_bayar: data.metode_bayar,
+          nama_pelanggan: data.nama_pelanggan,
+          no_hp_pelanggan: data.no_hp_pelanggan,
         }
       });
 
@@ -93,24 +105,34 @@ export class OrdersService {
 
       // 4. Tambahkan uang pemasukan ke laci Shift Kasir yang sedang aktif jika pembayaran tunai
       const activeShift = await tx.shift.findFirst({
-        where: { tenantId, kasirId, waktu_tutup: null }
+        where: { tenantId, kasirId, waktu_tutup: null },
+        orderBy: { waktu_buka: 'desc' }
       });
 
-      if (activeShift && data.metode_bayar === 'TUNAI') {
-        await tx.shift.update({
-          where: { id: activeShift.id },
-          data: { kas_sistem: { increment: total } }
-        });
+      if (activeShift) {
+        if (data.metode_bayar === 'TUNAI') {
+          await tx.shift.update({
+            where: { id: activeShift.id },
+            data: { kas_sistem: { increment: total } }
+          });
+        }
       }
 
       return order;
     });
   }
 
-  // Fungsi Read Riwayat
-  async findAll(tenantId: string) {
+  // Fungsi Read Riwayat & KDS
+  async findAll(tenantId: string, statusFilter?: string) {
+    const where: any = { tenantId };
+    if (statusFilter === 'active') {
+      where.status = { in: ['NEW', 'PROCESSING', 'READY'] };
+    } else if (statusFilter) {
+      where.status = statusFilter;
+    }
+
     return this.prisma.order.findMany({
-      where: { tenantId },
+      where,
       include: {
         kasir: { select: { name: true } },
         table: true,
@@ -118,6 +140,35 @@ export class OrdersService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // Update Status Pesanan (KDS: PROCESSING -> READY -> COMPLETED)
+  async updateOrderStatus(tenantId: string, orderId: string, status: OrderStatus) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, tenantId },
+    });
+    if (!order) {
+      throw new NotFoundException('Pesanan tidak ditemukan.');
+    }
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status },
+      include: {
+        table: true,
+        orderItems: { include: { menuItem: true } },
+      },
+    });
+
+    // Jika pesanan selesai disajikan dan bertipe Dine In, bebaskan status meja
+    if (status === 'COMPLETED' && order.tableId) {
+      await this.prisma.table.update({
+        where: { id: order.tableId },
+        data: { status: 'KOSONG' },
+      });
+    }
+
+    return updated;
   }
 
   // Fungsi Void / Batalkan Transaksi (FR-POS-09)
@@ -178,10 +229,19 @@ export class OrdersService {
         }
       }
 
-      // 3. Jika pembayaran TUNAI, potong kas_sistem pada shift kasir aktif
+      // 3. Jika bertipe DINE_IN, kosongkan meja
+      if (order.tipe === 'DINE_IN' && order.tableId) {
+        await tx.table.update({
+          where: { id: order.tableId },
+          data: { status: 'KOSONG' },
+        });
+      }
+
+      // 4. Jika order dibayar tunai, kurangi kas_sistem di shift kasir aktif
       if (order.metode_bayar === 'TUNAI') {
         const activeShift = await tx.shift.findFirst({
-          where: { tenantId, kasirId: userId, waktu_tutup: null },
+          where: { tenantId, waktu_tutup: null },
+          orderBy: { waktu_buka: 'desc' },
         });
 
         if (activeShift) {
@@ -190,14 +250,6 @@ export class OrdersService {
             data: { kas_sistem: { decrement: order.total } },
           });
         }
-      }
-
-      // 4. Jika pesanan memiliki nomor meja, kembalikan meja menjadi KOSONG
-      if (order.tableId) {
-        await tx.table.update({
-          where: { id: order.tableId },
-          data: { status: 'KOSONG' },
-        });
       }
 
       return updatedOrder;
