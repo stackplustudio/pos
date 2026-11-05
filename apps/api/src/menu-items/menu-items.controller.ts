@@ -24,7 +24,7 @@ export class MenuItemsController {
 
   @Roles(Role.OWNER, Role.MANAGER)
   @Patch(':id')
-  update(@Request() req: any, @Param('id') id: string, @Body() body: { nama?: string; harga_jual?: number; status?: boolean }) {
+  update(@Request() req: any, @Param('id') id: string, @Body() body: { nama?: string; harga_jual?: number; status?: boolean; categoryId?: string }) {
     return this.menuItemsService.update(req.user.tenantId, id, body);
   }
 

@@ -41,6 +41,35 @@ export class StockMovementsService {
     });
   }
 
+  async opname(tenantId: string, data: { ingredientId: string; stok_fisik: number; catatan?: string }) {
+    const ingredient = await this.prisma.ingredient.findFirst({
+      where: { id: data.ingredientId, tenantId },
+    });
+
+    if (!ingredient) throw new NotFoundException('Bahan baku tidak ditemukan.');
+
+    const selisih = data.stok_fisik - ingredient.stok_saat_ini;
+
+    return this.prisma.$transaction(async (tx) => {
+      const movement = await tx.stockMovement.create({
+        data: {
+          tenantId,
+          ingredientId: data.ingredientId,
+          tipe: 'OPNAME' as MovementType,
+          jumlah: selisih,
+          catatan: data.catatan || `Stok Opname: fisik ${data.stok_fisik} (sistem ${ingredient.stok_saat_ini}, selisih ${selisih})`,
+        },
+      });
+
+      await tx.ingredient.update({
+        where: { id: data.ingredientId },
+        data: { stok_saat_ini: data.stok_fisik },
+      });
+
+      return { movement, selisih, stok_baru: data.stok_fisik };
+    });
+  }
+
   async findAll(tenantId: string, ingredientId?: string) {
     return this.prisma.stockMovement.findMany({
       where: {

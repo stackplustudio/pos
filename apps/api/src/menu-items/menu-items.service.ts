@@ -22,7 +22,7 @@ export class MenuItemsService {
     });
   }
 
-  async update(tenantId: string, id: string, data: { nama?: string; harga_jual?: number; status?: boolean }) {
+  async update(tenantId: string, id: string, data: { nama?: string; harga_jual?: number; status?: boolean; categoryId?: string }) {
     const existing = await this.prisma.menuItem.findFirst({
       where: { id, tenantId },
     });

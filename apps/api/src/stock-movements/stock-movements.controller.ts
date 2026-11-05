@@ -17,6 +17,12 @@ export class StockMovementsController {
   }
 
   @Roles(Role.OWNER, Role.MANAGER)
+  @Post('opname')
+  opname(@Request() req: any, @Body() body: { ingredientId: string; stok_fisik: number; catatan?: string }) {
+    return this.stockMovementsService.opname(req.user.tenantId, body);
+  }
+
+  @Roles(Role.OWNER, Role.MANAGER)
   @Get()
   findAll(@Request() req: any, @Query('ingredientId') ingredientId?: string) {
     return this.stockMovementsService.findAll(req.user.tenantId, ingredientId);
